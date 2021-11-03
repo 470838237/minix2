@@ -1,9 +1,11 @@
 # Makefile for the boot monitor package.
 
 SYS	= ..
+#https://users.informatik.haw-hamburg.de/~krabat/FH-Labor/gnupro/2_GNUPro_Compiler_Tools/Using_GNU_CC/gccIntel_386_Options.html
+#-mcpu=cpu type’ options are defined for Intel’s i386 family of computers
 #https://docs.oracle.com/cd/E19957-01/806-3567/cc_options.html cc编译器参考
 #-s Removes all symbolic debugging information from the output object file.
-# 
+# -.o含义待查询
 CC	= exec cc
 CC86	= exec cc -mi86 -Was-ncc
 CFLAGS	= -I$(SYS) -O
