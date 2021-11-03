@@ -1,0 +1,62 @@
+对于一个有分区的硬盘，第一个扇区上是masterboot程序；
+硬盘上没有安装系统的分区的第一个扇区上是jumpboot程序；
+装有系统的分区的第一个扇区上是bootblock程序。
+对于没有分区的硬盘，硬盘第一个扇区上直接存放的就是bootblock程序。
+硬盘启动过程：
+master_boot(masterboot.s)--->secondary_boot(bootblock.s)------->boot_monitor(boothead.s)--->minix(mpx386.s)执行流程分析
+分区引导块：bootblock.s(分区装有minix系统)/jumpboot.s(分区装没有minix系统)
+软盘启动过程:bootblock.s---->boot_monitor(boothead.s)--->minix(mpx386.s)执行流程分析
+#intsallboot程序安装到主引导分区
+#然后被bios程序加载到内存0x7C00处
+#然后跳转到0x7C00地址执行
+#该模块将masterboot程序拷贝到内存
+#0x0600后再跳转到migrate:
+#然后查询分区表活动分区
+#找到活动分区后将获取分区引导块程序加载(即bootblock)
+#到内存地址0x7C00,然后跳转至0x7C00执行
+masterboot.s(master:)
+    |
+    |
+    |
+    |
+    |
+   \ /
+#被主引导程序masterboot加载到0x7C00
+#该程序加载boothead.s程序到内存0x1000
+#即boothead.s(boot:),然后跳转执行0x1000
+bootblock.s(boot:)
+    |
+    |
+    |
+    |
+    |
+   \ /
+boothead.s(boot:)
+    |
+    |
+    |
+    |
+    |
+   \ /
+boot.c(boot(void)==>execute(void)====>bootminix(void)=====>exec_image(char *image)====>minix(u32_t koff, u32_t kcs, u32_t kds,char *bootparams, size_t paramsize, u32_t aout))
+    |
+    |
+    |
+    |
+    |
+   \ /
+boothead.s(_minix:)
+    |
+    |
+    |
+    |
+    |
+   \ /
+kernel/mpx386.s(MINIX:====>_cstart:(==>kernel/start.c cstart===>kernel/protect.c prot_init)=====>_main:)
+    |
+    |
+    |
+    |
+    |
+   \ /
+kernel/main.c(main)
