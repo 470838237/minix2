@@ -27,7 +27,7 @@
 	! <ibm/partition>.h:
 	bootind	   =	     0
 	sysind	   =	     4
-	lowsec	   =	     8
+	lowsec	   =	     8 !分区表项中逻辑起始扇区低16位相对分区表项偏移地址,参考硬盘分区DPT详解文档
 
 
 .text
@@ -110,16 +110,16 @@ retry:	push	dx		! Save drive code
 	push	es
 	push	di		! Next call destroys es and di
 	movb	ah, #0x08	! Code for drive parameters
-	int	0x13
+	int	0x13        ! 驱动器对应于硬盘或软盘，而不是分区，bios并不知道分区存在，如何分区
 	pop	di
 	pop	es
 	andb	cl, #0x3F	! cl = max sector number (1-origin)
-	incb	dh		! dh = 1 + max head number (0-origin)
+	incb	dh		! dh = 1 + max head number (0-origin)  此处是指硬盘总磁头数和磁道数
 	movb	al, cl		! al = cl = sectors per track
 	mulb	dh		! dh = heads, ax = heads * sectors
 	mov	bx, ax		! bx = sectors per cylinder = heads * sectors
 	mov	ax, lowsec+0(si)
-	mov	dx, lowsec+2(si)! dx:ax = sector within drive
+	mov	dx, lowsec+2(si)! dx:ax = sector within drive  引导块起始逻辑扇区地址
 	cmp	dx, #[1024*255*63-255]>>16  ! Near 8G limit? 分区扇区数目为dx:ax,dx为扇区的高16位，#[1024*255*63-255]>>16取高16位和dx比较
 	jae	bigdisk
 	div	bx		! ax = cylinder, dx = sector within cylinder
@@ -136,8 +136,8 @@ retry:	push	dx		! Save drive code
 	movb	dh, al		! dh = al = head
 	mov	bx, #LOADOFF	! es:bx = where sector is loaded
 	mov	ax, #0x0201	! Code for read, just one sector
-	int	0x13		! Call the BIOS for a read
-	jmp	rdeval		! Evaluate read result
+	int	0x13		! Call the BIOS for a read   引导块逻辑起始地址小于8G时使用0x02读写扇区数据，0x02功能通过扇区+柱面+磁头定位读写区域起始地址
+	jmp	rdeval		! Evaluate read result       当0x02功能传参磁道位置为10位因此磁道号大于1024时不能使用该功能(不能传参)，因为需要使用扩展读写(cmp dx, #[1024*255*63-255]>>16)
 bigdisk:
 	mov	bx, dx		! bx:ax = dx:ax = sector to read
 	pop	dx		! Restore drive code in dl
@@ -145,8 +145,8 @@ bigdisk:
 	mov	si, #BUFFER+ext_rw ! si = extended read/write parameter packet
 	mov	8(si), ax	! Starting block number = bx:ax
 	mov	10(si), bx
-	movb	ah, #0x42	! Extended read
-	int	0x13
+	movb	ah, #0x42	! Extended read  扩展读使用逻辑起始扇区+要读写的扇区数定位读写磁盘区域,引导块逻辑起始地址大于8G时使用0x42读写扇区数据
+	int	0x13            ! 将引导块程序加载到内存0x7C00
 	pop	si		! Restore si to point to partition entry
 	!jmp	rdeval
 rdeval:

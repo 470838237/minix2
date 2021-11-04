@@ -54,5 +54,19 @@ INT 13H，AH=00H　软、硬盘控制器复位
 
 这里的DL是驱动器的编号
 
+------------------------------------------------------------------------------------------------------------------------
+int 0x13,ah = 0x42; 的扩展读,从磁盘读 n 个 sectors 到 buffer 中
+读入的 buffer 结构，用 c 描述为：
+struct buffer_packet
+{
+    short buffer_packet_size;         /* struct's size（可以为 0x10 或 0x18）*/
+    short sectors;                    /* 读多少个 sectors */
+    char *buffer;                     /* buffer address */
+    long long start_sectors;          /* 从哪个 sector 开始读 */
+    long long *l_buffer;              /* 64 位的 buffer address */
+} buffer;
+这个 buffer_packet 结构大小可以为 16 bytes 或者 24 bytes
+当 buffer_packet_size 设置为 0x10，最后的 l_buffer 无效。 buffer_packet_size 设为 0x18 时，l_buffer 需要提供。
+注意：buffer_packet 结构里的 buffer 地址，它是个逻辑地址，即：segment:offset 低 word 放着 offset 值，高 word 放着 segment 值。
 
 
