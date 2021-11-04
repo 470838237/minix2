@@ -81,6 +81,7 @@ typedef struct bios_env
 
 void exit(int code);
 			/* Exit the monitor. */
+			//https://www.felixcloutier.com/x86/monitor
 u32_t mon2abs(void *ptr);
 			/* Local monitor address to absolute address. */
 u32_t vec2abs(vector *vec);

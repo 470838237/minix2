@@ -15,7 +15,9 @@
 ! turn smart enough to load the different parts of the Minix kernel into
 ! memory and execute them to finally get Minix started.
 !
-
+!该程序被加master boot加载至0x7C00处执行，执行入口boot:
+!该程序寻找硬盘/boot程序并加载至0x1000然后执行/boot
+!enddata之上的32位地址空间被installboot程序写入了/boot程序的磁盘地址
 	LOADOFF	   =	0x7C00	! 0x0000:LOADOFF is where this code is loaded
 	BOOTSEG    =	0x1000	! Secondary boot code segment.
 	BOOTOFF	   =	0x0030	! Offset into /boot above header
@@ -31,13 +33,14 @@
 .text
 
 ! Start boot procedure.
-
+!执行boot时:寄存器值es:0  ds:0 ss:0  bx:#LOADOFF  ip:#LOADOFF  cx:masterboot 执行mov ax, #0x0201指令传递的磁道号和起始扇区
+!dx:执行mov ax, #0x0201指令传递的驱动器和磁头号  dl:驱动器 dh:磁头号 si:指向主引导磁盘分区表地址
 boot:
 	xor	ax, ax		! ax = 0x0000, the vector segment
 	mov	ds, ax
 	cli			! Ignore interrupts while setting stack
 	mov	ss, ax		! ss = ds = vector segment
-	mov	sp, #LOADOFF	! Usual place for a bootstrap stack
+	mov	sp, #LOADOFF	! Usual place for a bootstrap stack push时栈地址减小
 	sti
 
 	push	ax
@@ -53,7 +56,7 @@ boot:
 
 	testb	dl, dl		! Winchester disks if dl >= 0x80
 	jge	floppy
-
+!winchester磁盘驱动器执行分支
 winchester:
 
 ! Get the offset of the first sector of the boot partition from the partition

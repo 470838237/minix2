@@ -79,12 +79,13 @@ mkfile.com:	mkfile
 installboot:	installboot.o rawfs.o
 	$(CC) $(STRIP) -o installboot installboot.o rawfs.o
 	install -S 6kw installboot
-#命令自动推导会生成对应名称的目标文件
+#命令自动推导会生成对应名称的目标文件，自动推导和目标后缀有关系，例如识别到.o后缀的会自动推导添加同名.c文件作为依赖，推导.o文件的编译命令
 #多规则的目标,重建此目标的命令只能出现在一个规则中(可以是多条命令) 因此生成rawfs.o为推导生成32位目标文件，boot.o为i86(16位)平台目标文件
 installboot.o bootimage.o: image.h
 boot.o bootimage.o dosboot.o edparams.o: boot.h
 rawfs.o rawfs86.o installboot.o boot.o bootimage.o: rawfs.h
 
+#install 伪目标
 install:	$(MDEC)/bootblock $(MDEC)/boot $(MDEC)/masterboot \
 		$(MDEC)/jumpboot $(BIN)/installboot $(BIN)/edparams
 dosinstall:	$(MDEC)/boot.com $(MDEC)/mkfile.com

@@ -23,8 +23,8 @@ char version[]=		"2.19";
 #include <minix/minlib.h>
 #include <minix/syslib.h>
 #if BIOS
-#include <kernel/const.h>
-#include <kernel/type.h>
+#include <../kernel/const.h>
+#include <../kernel/type.h>
 #endif
 #if UNIX
 #include <stdio.h>

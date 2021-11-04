@@ -1,7 +1,3 @@
-对于一个有分区的硬盘，第一个扇区上是masterboot程序；
-硬盘上没有安装系统的分区的第一个扇区上是jumpboot程序；
-装有系统的分区的第一个扇区上是bootblock程序。
-对于没有分区的硬盘，硬盘第一个扇区上直接存放的就是bootblock程序。
 硬盘启动过程：
 master_boot(masterboot.s)--->secondary_boot(bootblock.s)------->boot_monitor(boothead.s)--->minix(mpx386.s)执行流程分析
 分区引导块：bootblock.s(分区装有minix系统)/jumpboot.s(分区装没有minix系统)

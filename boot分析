@@ -42,6 +42,6 @@ r_super超级块是分区的第一个块，而不是磁盘的第一个块，如�
 installboot.c和rawfs.c一起编译为目标文件，rawfs.c引用了boothead.s例程，而boothead.s没有和installboot.c一起编译，因此推测installboot程序只能运行在minix操作系统上，因为minix系统
 内存中加载bootmonitor程序，bootmonitor包含了boothead.s代码
 
-boot/makefile中rawfs.o为rawfs86.o的软链接，而rawfs86.o是使用16位模式编译(指针地址是16位)，installboot依赖rawfs.o(即rawfs86.o),而installboot编译为32位目的文件
+rawfs.o在32位平台编译为32位目标文件,rawfs86.o是使用16位模式编译(指针地址是16位)，installboot依赖rawfs.o(即rawfs86.o),而installboot编译为32位目的文件
 因此涉及到32位目的文件如何链接16位目的文件：
 

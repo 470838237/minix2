@@ -197,6 +197,9 @@ any_key:
 ! u32_t mon2abs(void *ptr)
 !	Address in monitor data to absolute address.
 .define _mon2abs
+#此处是mov	bx, sp，而不是push	bx, sp,因此bx存放的是返回地址,bx+2是第一个参数
+#实地模式下线性地址也被成为绝对地址(absolute address)
+#实地模式下线性地址=段寄存器(由操作系统分配)<<4+偏移地址(代码地址编号)
 _mon2abs:
 	mov	bx, sp
 	mov	ax, 2(bx)	! ptr

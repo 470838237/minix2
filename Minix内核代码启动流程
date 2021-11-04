@@ -1,6 +1,0 @@
-mpx386.s/mpx88.s
-MINIX:          ！minix系统入口，由secondary bootstrap(次级引导程序加载,即活动分区得引导程序加载)
-...........
-call	_cstart	! 调用 kernel/start.c cstart函数，该函数调用kernel/protect.c函数prot_init 初始化保护模式,向内存低端0-1024注册中断向量处理例程
-...........
-call    _main  ! 调用 kernel/main.c main函数

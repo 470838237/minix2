@@ -1,5 +1,4 @@
 
-
 reboot:
 	call	print !将下一条指令地址压栈，并将print的地址送入ip寄存器
 	.ascii	".  Hit any key to reboot.\0"!字符串被编入了.code段中。和代码段混在了一起，该处理方式是允许的，通过逻辑控制避免将数据送入cpu执行，因为在cpu看来数据毫无意义，是非法指令

@@ -21,6 +21,7 @@ int printf(const char *fmt, ...);
 #define SEEK_END	2
 
 /* Kernel printf requires a putk() function. */
+//此处返回应该改为void,应该和c语言版本有关系，旧的c语言允许这样做，待验证
 int putk(int c)
 {
 	char ch = c;
