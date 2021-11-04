@@ -1,0 +1,21 @@
+
+
+reboot:
+	call	print !将下一条指令地址压栈，并将print的地址送入ip寄存器
+	.ascii	".  Hit any key to reboot.\0"!字符串被编入了.code段中。和代码段混在了一起，该处理方式是允许的，通过逻辑控制避免将数据送入cpu执行，因为在cpu看来数据毫无意义，是非法指令
+	xorb	ah, ah		! Wait for keypress
+	int	0x16
+	call	print
+	.ascii	"\r\n\0"
+	int	0x19
+
+! Print a message.
+print:	pop	si		! si = String following 'call print'！将call压栈地址送入si寄存器，si的地址指向代码段的.ascii字符串，
+prnext:	lodsb			! al = *si++ is char to be printed
+	testb	al, al		! Null marks end
+	jz	prdone
+	movb	ah, #0x0E	! Print character in teletype mode
+	mov	bx, #0x0001	! Page 0, foreground color
+	int	0x10
+	jmp	prnext
+prdone:	jmp	(si)		! Continue after the string随着lodsb执行到结束，si指向了xorb	ah, ah，因此jmp	(si)是合法的

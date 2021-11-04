@@ -1,0 +1,47 @@
+
+主引导程序：masterboot(masterboot.s) 指硬盘第0个扇区的引导程序，该扇区包含引导程序和分区表。引导程序被bios加载到内存0x7C00起始处，主引导程序加载bootstrap
+secondary boot 次级引导程序(bootblock.s)
+boot程序(boothead.s):boot monitor(boothead.s,boot.c,bootimage.c,rawfs.c)：：活动分区第一扇区内的引导程序，该引导被master bootstrap加载，该引导程序加载minix操作系统
+
+/src/boot/bootblocks.s(初级引导程序):该程序会被制作为引导块镜像被安装在磁盘第一个扇区。bios启动完毕后将第一个扇区程序加载到内存地址0x7C00起始处，然后 jmp 0x7C00开始执行引导块程序(installboot.c引导制作程序如何制作安装
+将引导块程序以保证0x7C00是要要执行的程序呢，初步分析其实程序入口为bootblocks.s的boot:)，磁盘第一个扇区除了包含引导块程序还包含分区配置表
+引导块程序读取分区表寻找活动分区的boot代码即()并加载boot到内存地址0x10000处,然后跳转到boot处执行
+
+/src/boot/bootimage.c   boot程序加载minix内核到内存中并启动minix
+
+/src/boot/installboot.c  boot安装程序:该程序制作boot和操作系统镜像文件，并将boot和操作系统镜像安装到磁盘上：
+make_image,将多个可执行文件制作成image文件
+假如名称为exec1，exec2的可执行文件制作为名为image映像文件
+image文件格式如下：
+|exec1 header  size=header size
+|可执行文件头扇区对齐,对齐空间使用字符0填充(扇区大小512)
+|exec1 text segment(size=text segment size)/exec1 text segment + exec1 header(size=text segment size + header size)(如果header的flag属性包含A_PAL标志，文本段包含了exec1 header)
+|exec1 text段扇区对齐,对齐空间使用字符0填充(扇区大小512)，如果header flag 包含A_SEP标志时data和text段才会分开，此时才需要文本段对齐，否则没有此对齐区域，text和data紧挨一起
+|exec1 data segment
+|exec1 data段扇区对齐,对齐空间使用字符0填充(扇区大小512)
+|exec2 header
+|可执行文件头扇区对齐,对齐空间使用字符0填充(扇区大小512)
+|exec2 exec2 text segment(size=text segment size)/exec2 text segment + exec1 header(size=text segment size + header size)(如果header的flag属性包含A_PAL标志，文本段包含了exec1 header)
+|exec2 text段扇区对齐,对齐空间使用字符0填充(扇区大小512)，如果header flag 包含A_SEP标志时data和text段才会分开，此时才需要文本段对齐，否则没有此对齐区域，text和data紧挨一起
+|exec2 data segment
+|exec2 data段扇区对齐,对齐空间使用字符0填充(扇区大小512)
+
+extract_image:和make_image相反操作，将一个image文件还原成多个可执行文件
+install_master：将masterboot code写入主引导分区
+主引导扇区结构如下：
+mastercode_size=(masterboot code).size
+
+#mastercode_size+keys+"\r"+"#"+logical(jumpboot.s相关)
+mastercode_size<=PARTPOS
+masterboot_size = mastercode_seg+Partition_Table+"0xAA55"  !0xAA55占用510和511字节
+
+make_bootable:将bootblock.s安装到活动分区引导块，将boot程序(boothead.s相关)安装到分区扇区中，将boot程序得安装地址写入到引导块中将minix映像代码写在boot程序后面
+操作系统对文件块视为基本读写单位，并且提供了块读写功能(即文件读写功能)，硬盘也被视为文件进行操作，所以installmaster中readblock和writeblock通过文件系统的系统功能实现硬盘第0块的读写
+而make_bootable中r_super是对扇区进行读写，而操作系统没有提供该功能，所以直接绕过对操作系统的文件功能的调用，直接使用bios读写功能读写扇区
+r_super超级块是分区的第一个块，而不是磁盘的第一个块，如果使用文件系统接口读取磁盘需要将超级块转换为相对于磁盘的绝对地址块号
+installboot.c和rawfs.c一起编译为目标文件，rawfs.c引用了boothead.s例程，而boothead.s没有和installboot.c一起编译，因此推测installboot程序只能运行在minix操作系统上，因为minix系统
+内存中加载bootmonitor程序，bootmonitor包含了boothead.s代码
+
+boot/makefile中rawfs.o为rawfs86.o的软链接，而rawfs86.o是使用16位模式编译(指针地址是16位)，installboot依赖rawfs.o(即rawfs86.o),而installboot编译为32位目的文件
+因此涉及到32位目的文件如何链接16位目的文件：
+
