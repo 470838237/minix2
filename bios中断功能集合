@@ -69,4 +69,36 @@ struct buffer_packet
 当 buffer_packet_size 设置为 0x10，最后的 l_buffer 无效。 buffer_packet_size 设为 0x18 时，l_buffer 需要提供。
 注意：buffer_packet 结构里的 buffer 地址，它是个逻辑地址，即：segment:offset 低 word 放着 offset 值，高 word 放着 segment 值。
 
+------------------------------------------------------------------------------------------------------------------------
+int 0x11;获取驱动配置列表服务
+返回参数为ax:
+14,15位: 打印机端口数
+13位:未使用
+12位：Internal modem 1=yes,2=no
+11,10,9位:串行端口数
+第0位被置位时，7,6位:软盘驱动器数(00=1 drive, 01=2 drives)(maximum 4)
+5,4位:Initial video-display mode (11=80x25 monochrome,10=80x25 color, 01=40x25 color, 00=EGA/VGA/SVGA)
+2,3位：Planar RAM size (11 = 64k which is normal)
+1位：未使用
+0位:Set if there are any diskette drives
+
+------------------------------------------------------------------------------------------------------------------------
+
+int	0x13;ah=0;
+
+对磁盘复位
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -16,7 +16,7 @@
 ! memory and execute them to finally get Minix started.
 !
 !该程序被加master boot加载至0x7C00处执行，执行入口boot:
-!该程序寻找硬盘/boot程序并加载至0x1000然后执行/boot
+!该程序寻找硬盘/boot程序并加载至0x10000(BOOTSEG<<4)然后执行/boot
 !enddata之上的32位地址空间被installboot程序写入了/boot程序的磁盘地址
 	LOADOFF	   =	0x7C00	! 0x0000:LOADOFF is where this code is loaded
 	BOOTSEG    =	0x1000	! Secondary boot code segment.
@@ -39,14 +39,13 @@ boot:
 	xor	ax, ax		! ax = 0x0000, the vector segment
 	mov	ds, ax
 	cli			! Ignore interrupts while setting stack
-	mov	ss, ax		! ss = ds = vector segment
-	mov	sp, #LOADOFF	! Usual place for a bootstrap stack push时栈地址减小
-	sti
+	mov	ss, ax		! ss = ds = vector segment                                  pop指令先复制栈顶元素再减小sp
+	mov	sp, #LOADOFF	! Usual place for a bootstrap stack push时栈地址减小      sp指针指向栈顶(push指令后，sp指向栈顶元素),push先增加sp再压入数据
+	sti                                                                         !           0x7C00            无数据           <----bp+secpcyl                 栈底
+	push	ax                                                                  !           0x7BFE            push	ax        <----bp+lowsec+2
+	push	ax		! Push a zero lowsec(bp)                                                0x7BFC            push	ax        <----bp+lowsec+0
 
-	push	ax
-	push	ax		! Push a zero lowsec(bp)
-
-	push	dx		! Boot device in dl will be device(bp)
+	push	dx		! Boot device in dl will be device(bp)                                  0x7BFA            push	dx        <----bp
 	mov	bp, sp		! Using var(bp) is one byte cheaper then var.
 
 	push	es
@@ -63,7 +62,7 @@ winchester:
 ! table.  The table is found at es:si, the lowsec parameter at offset LOWSEC.
 
 	eseg
-	les	ax, LOWSEC(si)	  ! es:ax = LOWSEC+2(si):LOWSEC(si)
+	les	ax, LOWSEC(si)	  ! es:ax = LOWSEC+2(si):LOWSEC(si)                     les指令将LOWSEC(si)低16位移动到ax,高16位移动到es
 	mov	lowsec+0(bp), ax  ! Low 16 bits of partition's first sector
 	mov	lowsec+2(bp), es  ! High 16 bits of partition's first sector
 
@@ -117,17 +116,17 @@ loadboot:
 	xor	bx, bx		! Load first sector at es:bx = BOOTSEG:0x0000
 	mov	si, #LOADOFF+addresses	! Start of the boot code addresses
 load:
-	mov	ax, 1(si)	! Get next sector number: low 16 bits
+	mov	ax, 1(si)	! Get next sector number: low 16 bits   boot程序相对引导扇区的偏移扇区数,该数据被installboot程序写入(相对分区起始地址)
 	movb	dl, 3(si)	! Bits 16-23 for your up to 8GB partition
 	xorb	dh, dh		! dx:ax = sector within partition
-	add	ax, lowsec+0(bp)
-	adc	dx, lowsec+2(bp)! dx:ax = sector within drive
-	cmp	dx, #[1024*255*63-255]>>16  ! Near 8G limit?
+	add	ax, lowsec+0(bp)    !
+	adc	dx, lowsec+2(bp)! dx:ax = sector within drive     boot程序相对磁盘第一个扇区的偏移扇区数(相对磁盘起始地址)
+	cmp	dx, #[1024*255*63-255]>>16  ! Near 8G limit?      根据起始偏移扇区是否大于8G决定使用bios 0x13功能0x02还是0x42来读取boot程序到内存中
 	jae	bigdisk
-	div	secpcyl(bp)	! ax = cylinder, dx = sector within cylinder
+	div	secpcyl(bp)	! ax = cylinder, dx = sector within cylinder        dx余数 ax商        此分支dx:ax小于8g因此  ax<=2^10
 	xchg	ax, dx		! ax = sector within cylinder, dx = cylinder
 	movb	ch, dl		! ch = low 8 bits of cylinder
-	divb	(di)		! al = head, ah = sector (0-origin)
+	divb	(di)		! al = head, ah = sector (0-origin)             ah余数   al商
 	xorb	dl, dl		! About to shift bits 8-9 of cylinder into dl
 	shr	dx, #1
 	shr	dx, #1		! dl[6..7] = high cylinder
@@ -137,8 +136,8 @@ load:
 	movb	dh, al		! dh = al = head
 	movb	dl, device(bp)	! dl = device to read
 	movb	al, (di)	! Sectors per track - Sector number (0-origin)
-	subb	al, ah		! = Sectors left on this track
-	cmpb	al, (si)	! Compare with # sectors to read
+	subb	al, ah		! = Sectors left on this track    此处判断读取的扇区数目是否超过磁道的剩余扇区,说明int 13,0x02功能
+	cmpb	al, (si)	! Compare with # sectors to read  单次读取不能跨越磁道读取磁盘
 	jbe	read		! Can't read past the end of a cylinder?
 	movb	al, (si)	! (si) < sectors left on this track
 read:	push	ax		! Save al = sectors to read
@@ -232,3 +231,16 @@ ext_rw:
 addresses:
 ! The space below this is for disk addresses for a 38K /boot program (worst
 ! case, i.e. file is completely fragmented).  It should be enough.
+! 根据该boot加载表项，boot程序可以在多个不连续的扇区上存储。由于相对分区便宜只有24,所以boot程序只能存放在分区前2^24个扇区中
+! boot程序加载表由intsallboot make_bootable写入
+! addresses标识符对应地址被installboot make_bootable写入数据结构如下
+! table entry1:
+! boot程序扇区数                            1字节
+! boot程序起始扇区相对分区偏移数低16位          2字节
+! boot程序起始扇区相对分区偏移数高8位           1字节
+! table entry2: 当entry2第一字节为0时将不再
+! boot程序扇区数                            1字节
+! boot程序起始扇区相对分区偏移数低16位          2字节
+! boot程序起始扇区相对分区偏移数高8位           1字节
+! table entry3: 当entry第一字节为0时标识没有需要加载的boot扇区
+! boot程序扇区数                            1字节

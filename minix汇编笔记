@@ -1,4 +1,7 @@
-
+pop指令先复制栈顶元素再减小sp
+sp指针指向栈顶(push指令后，视频指向栈顶元素),push先增加sp再压入数据
+LES( load ES)指令是把内存中指定位置的双字操作数的低位字装入指令中指定的寄存器、高位字装入ES寄存器的功能。
+jmpf	offset, segment 命令  offset和segment(实际跳转的地址为segment<<4+offset)
 reboot:
 	call	print !将下一条指令地址压栈，并将print的地址送入ip寄存器
 	.ascii	".  Hit any key to reboot.\0"!字符串被编入了.code段中。和代码段混在了一起，该处理方式是允许的，通过逻辑控制避免将数据送入cpu执行，因为在cpu看来数据毫无意义，是非法指令

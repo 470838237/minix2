@@ -5,7 +5,7 @@ boot程序(boothead.s):boot monitor(boothead.s,boot.c,bootimage.c,rawfs.c)：：
 
 /src/boot/bootblocks.s(初级引导程序):该程序会被制作为引导块镜像被安装在磁盘第一个扇区。bios启动完毕后将第一个扇区程序加载到内存地址0x7C00起始处，然后 jmp 0x7C00开始执行引导块程序(installboot.c引导制作程序如何制作安装
 将引导块程序以保证0x7C00是要要执行的程序呢，初步分析其实程序入口为bootblocks.s的boot:)，磁盘第一个扇区除了包含引导块程序还包含分区配置表
-引导块程序读取分区表寻找活动分区的boot代码即()并加载boot到内存地址0x10000处,然后跳转到boot处执行
+引导块程序读取分区表寻找活动分区的boot代码即()并加载boot到内存地址0x10000(BOOTSEG<<4)处,然后跳转到boot处执行
 
 /src/boot/bootimage.c   boot程序加载minix内核到内存中并启动minix
 
@@ -31,9 +31,9 @@ install_master：将masterboot code写入主引导分区
 主引导扇区结构如下：
 mastercode_size=(masterboot code).size
 
-#mastercode_size+keys+"\r"+"#"+logical(jumpboot.s相关)
+#mastercode_size+[guide[0]+"\r#"+offset]
 mastercode_size<=PARTPOS
-masterboot_size = mastercode_seg+Partition_Table+"0xAA55"  !0xAA55占用510和511字节
+masterboot_size = mastercode_size+Partition_Table+"0xAA55"  !0xAA55占用510和511字节
 
 make_bootable:将bootblock.s安装到活动分区引导块，将boot程序(boothead.s相关)安装到分区扇区中，将boot程序得安装地址写入到引导块中将minix映像代码写在boot程序后面
 操作系统对文件块视为基本读写单位，并且提供了块读写功能(即文件读写功能)，硬盘也被视为文件进行操作，所以installmaster中readblock和writeblock通过文件系统的系统功能实现硬盘第0块的读写

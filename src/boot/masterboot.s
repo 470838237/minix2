@@ -98,7 +98,7 @@ error1:	jc	error			! No disk?
 ! Load sector 0 from the current device.  It's either a floppy bootstrap or
 ! a hard disk master bootstrap.
 load0:
-	mov	si, #BUFFER+zero-lowsec	! si = where lowsec(si) is zero
+	mov	si, #BUFFER+zero-lowsec	! si = where lowsec(si) is zero  如果是软盘si+lowsec执行标号zero的地址 (起始4字节记录了起始扇区偏移)
 	!jmp	load
 
 ! Load sector lowsec(si) from the current device.  The obvious head, sector,
@@ -119,7 +119,7 @@ retry:	push	dx		! Save drive code
 	mulb	dh		! dh = heads, ax = heads * sectors
 	mov	bx, ax		! bx = sectors per cylinder = heads * sectors
 	mov	ax, lowsec+0(si)
-	mov	dx, lowsec+2(si)! dx:ax = sector within drive  引导块起始逻辑扇区地址
+	mov	dx, lowsec+2(si)! dx:ax = sector within drive  引导块起始扇区逻辑地址
 	cmp	dx, #[1024*255*63-255]>>16  ! Near 8G limit? 分区扇区数目为dx:ax,dx为扇区的高16位，#[1024*255*63-255]>>16取高16位和dx比较
 	jae	bigdisk
 	div	bx		! ax = cylinder, dx = sector within cylinder
@@ -216,3 +216,4 @@ ext_rw:
 	.data2	0		! Buffer address segment
 	.data4	0		! Starting block number low 32 bits (tbfi)
 zero:	.data4	0		! Starting block number high 32 bits
+!如果设备是软盘则标号zero:地址指向引导块起始扇区逻辑地址,此数据被installboot,install_master写入(猜测，也可能被make_bootable写入)

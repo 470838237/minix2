@@ -4,4 +4,5 @@ installboot.c(r_super)->rawfs.c(readblock)->boot.c(readblock)
 在32位系统上installboot.c和rawfs.c被编译器为32位boot安装程序,rawfs.c和boot.c及其他程序被编译为16位boot monitor程序(boot monitor被boot程序安装到硬盘用于启动minix系统)
 3 32位安装程序如何调用16位程序函数readblock呢？
 4 boot.c中mon2abs函数如何理解?
+5 masterboot.s zero标识地址起始扇区是如何被写入的
 
