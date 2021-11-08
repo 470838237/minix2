@@ -17,8 +17,8 @@
 #include <minix/const.h>
 #include <minix/type.h>
 #include <minix/syslib.h>
-#include <kernel/const.h>
-#include <kernel/type.h>
+#include <../kernel/const.h>
+#include <../kernel/type.h>
 #include <ibm/partition.h>
 #include "rawfs.h"
 #include "image.h"

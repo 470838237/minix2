@@ -1,3 +1,8 @@
+参考资料:
+Intel汇编语言程序设计第15章BIOS程序设计
+https://wiki.osdev.org/Detecting_Memory_(x86)
+
+------------------------------------------------------------------------------------------------------------------------
 INT 0x13 ,ah =0x02;  读取磁盘功能
 
 BIOS中断INT 0x13中，
@@ -87,6 +92,28 @@ int 0x11;获取驱动配置列表服务
 int	0x13;ah=0;
 
 对磁盘复位
+
+------------------------------------------------------------------------------------------------------------------------
+
+int 0x10;ah = 0F 返回当前视频模式的信息，包括模式号，显示的列数以及当前活跃的视频页号
+
+返回:
+al:模式
+ah:列数
+bh:页号
+
+------------------------------------------------------------------------------------------------------------------------
+
+int 0x12;获取低端可用内存
+获取低端可用内存即地址小于1MB的可用内存，通常小于640KB
+The INT 0x12 call will return AX = total number of KB. The AX value measures from 0,
+up to the bottom of the EBDA (of course, you probably shouldn't use the first 0x500 bytes of the space either -- i.e. the IVT or BDA).
+
+EDBA(Extended BIOS Data Area)
+IVT(中断向量表)
+返回:
+低端可用内存大小kb
+错误时进位
 
 
 

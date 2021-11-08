@@ -1,4 +1,6 @@
 /* Constants describing the disk */
+#include <type.h>
+#include <a.out.h>
 #define SECTOR_SIZE	512
 #define SECTOR_SHIFT	9
 #define RATIO		(BLOCK_SIZE / SECTOR_SIZE)

@@ -133,8 +133,6 @@ void minix(u32_t koff, u32_t kcs, u32_t kds,
 				char *bootparams, size_t paramsize, u32_t aout);
 			/* Start Minix. */
 void int15(bios_env_t *);
-
-
 /* Shared between boot.c and bootimage.c: */
 
 /* Sticky attributes. */

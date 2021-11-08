@@ -21,3 +21,11 @@ prnext:	lodsb			! al = *si++ is char to be printed
 	int	0x10
 	jmp	prnext
 prdone:	jmp	(si)		! Continue after the string随着lodsb执行到结束，si指向了xorb	ah, ah，因此jmp	(si)是合法的
+
+
+
+.bss
+    .comm  symbol ,  size,   value
+size给出最小的大小，value给出对齐要求
+.common未初始化的全局变量
+.bss 未初始化的静态变量以及初始化为0的静态变量或全局变量

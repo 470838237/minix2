@@ -88,7 +88,7 @@ sepID:
 	sub	cx, di		! Number of bss bytes
 	shr	cx, #1		! Number of words
 	rep
-	stos			! Clear bss
+	stos			! Clear bss  初始化bss为0
 
 ! Copy primary boot parameters to variables.  (Can do this now that bss is
 ! cleared and may be written into).
@@ -108,7 +108,7 @@ sepID:
 ! process.
 	xor	ax, ax
 	mov	dx, cs
-	call	seg2abs
+	call	seg2abs  !seg2abs  将段地址转换为线性地址 dx:ax===>dx-ax=dx<<4+ax;
 	mov	_caddr+0, ax
 	mov	_caddr+2, dx
 	xor	ax, ax
