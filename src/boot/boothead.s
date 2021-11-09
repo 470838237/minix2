@@ -48,8 +48,7 @@
 ! The header is either 32 bytes (short form) or 48 bytes (long form).  The
 ! bootblock will jump to address 0x10030 in both cases, calling one of the
 ! two jmpf instructions below.
-
-	jmpf	boot, LOADSEG+3	! Set cs right (skipping long a.out header)
+	jmpf	boot, LOADSEG+3	! Set cs right (skipping long a.out header)     设置cs寄存器
 	.space	11		! jmpf + 11 = 16 bytes
 	jmpf	boot, LOADSEG+2	! Set cs right (skipping short a.out header)
 boot:
@@ -63,7 +62,7 @@ comID:	xor	ax, ax
 	xchg	ax, a_text	! No text
 	add	a_data, ax	! Treat all text as data
 sepID:
-	mov	ax, a_total	! Total nontext memory usage
+	mov	ax, a_total	! Total nontext memory usage  a_total不包含文档段
 	and	ax, #0xFFFE	! Round down to even
 	mov	a_total, ax	! total - text = data + bss + heap + stack
 	cli			! Ignore interrupts while stack in limbo
@@ -74,14 +73,14 @@ sepID:
 	shr	ax, cl
 	mov	cx, cs
 	add	ax, cx
-	mov	ds, ax		! ds = cs + text / 16
-	mov	ss, ax
+	mov	ds, ax		! ds = cs + text / 16           设置ds寄存器
+	mov	ss, ax      ! 设置ss寄存器
 	sti			! Stack ok now
 	push	es		! Save es, we need it for the partition table
 	mov	es, ax
 	cld			! C compiler wants UP
 
-! Clear bss
+! Clear bss     初始化bss段
 	xor	ax, ax		! Zero
 	mov	di, #_edata	! Start of bss is at end of data
 	mov	cx, #_end	! End of bss (begin of heap)
@@ -93,9 +92,9 @@ sepID:
 ! Copy primary boot parameters to variables.  (Can do this now that bss is
 ! cleared and may be written into).
 	xorb	dh, dh
-	mov	_device, dx	! Boot device (probably 0x00 or 0x80)
-	mov	_rem_part+0, si	! Remote partition table offset
-	pop	_rem_part+2	! and segment (saved es)
+	mov	_device, dx	! Boot device (probably 0x00 or 0x80)   boot.h device变量保存设备驱动号
+	mov	_rem_part+0, si	! Remote partition table offset     boot.h rem_part变量低16位保存分区表偏移地址
+	pop	_rem_part+2	! and segment (saved es)                boot.h rem_part变量高16位保存分区表es段
 
 ! Remember the current video mode for restoration on exit.
 	movb	ah, #0x0F	! Get current video mode
@@ -110,21 +109,21 @@ sepID:
 	mov	dx, cs
 	call	seg2abs  !seg2abs  将段地址转换为线性地址 dx:ax===>dx-ax=dx<<4+ax;
 	mov	_caddr+0, ax
-	mov	_caddr+2, dx
+	mov	_caddr+2, dx    !设置boot.h caddr为cs线性地址
 	xor	ax, ax
 	mov	dx, ds
 	call	seg2abs
 	mov	_daddr+0, ax
-	mov	_daddr+2, dx
+	mov	_daddr+2, dx    !设置boot.h daddr为ds线性地址
 	push	ds
 	mov	ax, #LOADSEG
-	mov	ds, ax		! Back to the header once more
+	mov	ds, ax		! Back to the header once moremon2abs
 	mov	ax, a_total+0
 	mov	dx, a_total+2	! dx:ax = data + bss + heap + stack
 	add	ax, a_text+0
 	adc	dx, a_text+2	! dx:ax = text + data + bss + heap + stack
 	pop	ds
-	mov	_runsize+0, ax
+	mov	_runsize+0, ax  ! 设置boot.h runsize为程序运行时占用的总内存大小
 	mov	_runsize+2, dx	! 32 bit size of this process
 
 ! Determine available memory as a list of (base,size) pairs as follows:

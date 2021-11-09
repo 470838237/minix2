@@ -41,7 +41,8 @@
 #define MONO_MODE	0x07	/* 80x25 monochrome. */
 #define COLOR_MODE	0x03	/* 80x25 color. */
 
-
+//boot.c #undef EXTERN
+//#define EXTERN	/* Empty */
 /* Variables shared with boothead.s: */
 #ifndef EXTERN
 #define EXTERN extern
@@ -51,12 +52,13 @@ typedef struct vector {		/* 8086 vector */
 	u16_t	offset;
 	u16_t	segment;
 } vector;
-
+//rem_part.offset 分区表的偏移地址   rem_part.segment 访问文区表的段地址(es) boothead.s中设置
 EXTERN vector rem_part;		/* Boot partition table entry. */
-
+//caddr boot程序的cs段线性地址  daddr boot程序的ds段线性地址   boothead.s中设置
 EXTERN u32_t caddr, daddr;	/* Code and data address of the boot program. */
+//boot程序运行时占用总内存(4字节对齐)  boothead.s中设置
 EXTERN u32_t runsize;		/* Size of this program. */
-
+//boot 程序的设备驱动号
 EXTERN u16_t device;		/* Drive being booted from. */
 
 typedef struct {		/* One chunk of free memory. */
@@ -64,6 +66,9 @@ typedef struct {		/* One chunk of free memory. */
 	u32_t	size;		/* Number of bytes. */
 } memory;
 
+//mem[0].base = 0;mem[0].size<=1M(通常小于640KB)
+//mem[1].base = 1M;mem[1].size<=15
+//mem[2].base = 16M;mem[1].size<=4G
 EXTERN memory mem[3];		/* List of available memory. */
 EXTERN int mon_return;		/* Monitor stays in memory? */
 

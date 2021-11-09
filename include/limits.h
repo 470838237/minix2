@@ -21,6 +21,7 @@
 #define USHRT_MAX     0xFFFF	/* maximum value of unsigned short */
 
 /* _EM_WSIZE is a compiler-generated symbol giving the word size in bytes. */
+//int类型通常同具体机器的物理字长相同
 #if _EM_WSIZE == 2
 #define INT_MIN   (-32767-1)	/* minimum value of a 16-bit int */
 #define INT_MAX        32767	/* maximum value of a 16-bit int */

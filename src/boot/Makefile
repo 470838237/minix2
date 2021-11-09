@@ -56,7 +56,7 @@ edparams.o:	boot.c
 edparams:	edparams.o rawfs.o
 	$(CC) $(CFLAGS) $(STRIP) -o $@ edparams.o rawfs.o
 	install -S 16kw edparams
-
+#D选项是用来在使用gcc/g++编译的时候定义宏的。-D 后面直接跟宏命，相当于定义这个宏，默认这个宏的内容是1
 dosboot.o:	boot.c
 	$(CC86) $(CFLAGS) -DDOS -o $@ -c boot.c
 

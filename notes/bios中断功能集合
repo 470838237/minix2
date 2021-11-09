@@ -112,7 +112,7 @@ up to the bottom of the EBDA (of course, you probably shouldn't use the first 0x
 EDBA(Extended BIOS Data Area)
 IVT(中断向量表)
 返回:
-低端可用内存大小kb
+AX=低端可用内存大小kb
 错误时进位
 
 

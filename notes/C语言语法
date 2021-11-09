@@ -2,3 +2,47 @@
 一旦使用了#undef撤销宏，则后面的代码都不能使用这个宏，除非再次定义。此外，如果没有#undef的情形下就直接再次定义，后来的定义会覆盖掉前面的定义
 宏作用域是文件,或者直到遇到undef为止.
 extern不能引用一个未定义的变量
+
+C语言
+
+　　1.几条规则
+
+　　(1)char类型一般是8bit，但ANSI C里没有硬性规定其长度，某些嵌入式编译器可能是16bit
+
+　　(2)short和long类型的长度不相同
+
+　　(3)int类型通常同具体机器的物理字长相同
+
+　　(4)short通常是16bits, int通常是16bits or 32bits每种编译器可以根据硬件的不同自由确定, 但是short和int必须最少是16bits, 而long类型必须最少是32bits, 并且short必须比int和long类型要短。
+
+　　2.32位机上类型长度
+
+　　size of char: 1
+　　size of int: 4
+　　size of long:4
+　　size of float:4
+　　size of long long:8
+　　size of double:8
+　　size of long double:12
+　　size of char * :4
+
+　　3.64位机上类型长度
+
+　　size of char:1
+　　size of int:4
+　　size of long :8
+　　size of float :4
+　　size of long long:8
+　　size of double:8
+　　size of long double:16
+　　size of char * :8
+
+　　4.16位机类型长度
+　　char: 1
+　　int: 2
+　　long:4
+　　unsigned int：2
+　　unsigned short：2
+　　unsigned long：4
+　　float:4
+　　size of char * :4
