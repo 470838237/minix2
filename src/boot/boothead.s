@@ -1113,8 +1113,8 @@ noret386:
 
 	push	#0
 	push	#CS_SELECTOR
-	push	6(bp)
-	push	4(bp)		! 32 bit far address to kernel entry point
+	push	6(bp)       !retf 指令将6(bp)送入cs寄存器,6(bp)
+	push	4(bp)		! 32 bit far address to kernel entry point  retf 指令将4(bp)送入eip寄存器,
 
 	call	real2prot	! Switch to protected mode
 	mov	ax, #DS_SELECTOR ! Kernel data
