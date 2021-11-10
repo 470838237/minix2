@@ -46,3 +46,7 @@ C语言
 　　unsigned long：4
 　　float:4
 　　size of char * :4
+
+根据定义，结构本身驻留在地址 0。因此，指向的字段（上述步骤 3）的地址必须是结构开头的偏移量（以字节为单位）
+返回ident属性偏移字节数
+#define offsetof(type, ident)	((size_t) (unsigned long) &((type *)0)->ident)

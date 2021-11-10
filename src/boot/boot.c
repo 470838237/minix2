@@ -521,7 +521,11 @@ void initialize(void)
 	 * the booted partition entry as passed on by the bootstrap (rem_part).
 	 * All we need from it is the partition offset.
 	 */
-	raw_copy(mon2abs(&lowsec),
+
+
+	//copy rem_part(活动分区起始扇区) to lowsec
+    raw_copy(mon2abs(&lowsec),
+		                            //计算lowsec相对结构体偏移量
 		vec2abs(&rem_part) + offsetof(struct part_entry, lowsec),
 		sizeof(lowsec));
 

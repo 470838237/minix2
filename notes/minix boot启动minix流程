@@ -13,28 +13,27 @@ master_boot(masterboot.s)--->secondary_boot(bootblock.s)------->boot_monitor(boo
 masterboot.s(master:)
     |
     |
-    |
-    |
-    |
    \ /
-#被主引导程序masterboot加载到0x7C00
-#该程序加载boothead.s程序到内存0x1000
-#即boothead.s(boot:),然后跳转执行0x1000
+#被主引导程序masterboot加载到0x7C000
+#该程序加载boothead.s程序到内存0x10000
+#即boothead.s(boot:),然后跳转执行0x10030
 bootblock.s(boot:)
     |
     |
-    |
-    |
-    |
    \ /
+初始化bss,设置boot.c变量: 1 设置设备驱动号device 2 设置活动分区内存访问地址rem_part
+3 保存cur_vid_mode 4 保存cs线性地址caddr 5 保存ds线性地址daddr 6 保存boot程序运行时大小runsize
+7 根据获取的处理器版本设置可访问内存范围mem
 boothead.s(boot:)
     |
     |
-    |
+   \ /
+initialize-->
+boot.c(boot(void))
     |
     |
    \ /
-boot.c(boot(void)==>execute(void)====>bootminix(void)=====>exec_image(char *image)====>minix(u32_t koff, u32_t kcs, u32_t kds,char *bootparams, size_t paramsize, u32_t aout))
+boot.c(execute(void)====>bootminix(void)=====>exec_image(char *image)====>minix(u32_t koff, u32_t kcs, u32_t kds,char *bootparams, size_t paramsize, u32_t aout))
     |
     |
     |

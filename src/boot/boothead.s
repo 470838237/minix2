@@ -210,9 +210,9 @@ _mon2abs:
 .define _vec2abs
 _vec2abs:
 	mov	bx, sp
-	mov	bx, 2(bx)
-	mov	ax, (bx)
-	mov	dx, 2(bx)	! dx:ax vector
+	mov	bx, 2(bx)   ! bx:参数vec地址,vec保存活动分区访问segment:offset
+	mov	ax, (bx)    ! offset
+	mov	dx, 2(bx)	! segment
 	!jmp	seg2abs		! Translate
 
 seg2abs:			! Translate dx:ax to the 32 bit address dx-ax
@@ -246,7 +246,7 @@ abs2seg:			! Translate the 32 bit address dx-ax to dx:ax
 .define _raw_copy
 _raw_copy:
 	push	bp
-	mov	bp, sp
+	mov	bp, sp      !bp+4,bp+8,bp+12
 	push	si
 	push	di		! Save C variable registers
 copy:
@@ -341,7 +341,7 @@ gp_ret:
 !	the segment registers.  Caddr has already been set to the new location.
 .define _relocate
 _relocate:
-	pop	bx		! Return address
+	pop	bx		! Return address 将sp保存到bx
 	mov	ax, _caddr+0
 	mov	dx, _caddr+2
 	call	abs2seg
