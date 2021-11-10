@@ -56,3 +56,28 @@ kernel/mpx386.s(MINIX:====>_cstart:(==>kernel/start.c cstart===>kernel/protect.c
     |
    \ /
 kernel/main.c(main)
+
+
+实模式如何进入保护模式:
+1 准备GDT
+2 用lgdt加载gdtr
+3 打开a20
+4 置位cr0的pe位
+5 跳转进入保护模式
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

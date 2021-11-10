@@ -2,7 +2,7 @@
 主引导程序：masterboot(masterboot.s) 指硬盘第0个扇区的引导程序，该扇区包含引导程序和分区表。引导程序被bios加载到内存0x7C00起始处，主引导程序加载bootstrap
 secondary boot 次级引导程序(bootblock.s)
 boot程序(boothead.s):boot monitor(boothead.s,boot.c,bootimage.c,rawfs.c)：：活动分区第一扇区内的引导程序，该引导被master bootstrap加载，该引导程序加载minix操作系统
-
+主引导扇区510,511字节签名0xAA55为了让bios识别该扇区为引导扇区
 /src/boot/bootblocks.s(初级引导程序):该程序会被制作为引导块镜像被安装在磁盘第一个扇区。bios启动完毕后将第一个扇区程序加载到内存地址0x7C00起始处，然后 jmp 0x7C00开始执行引导块程序(installboot.c引导制作程序如何制作安装
 将引导块程序以保证0x7C00是要要执行的程序呢，初步分析其实程序入口为bootblocks.s的boot:)，磁盘第一个扇区除了包含引导块程序还包含分区配置表
 引导块程序读取分区表寻找活动分区的boot代码即()并加载boot到内存地址0x10000(BOOTSEG<<4)处,然后跳转到boot处执行
