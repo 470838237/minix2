@@ -3,6 +3,7 @@
 #define sbrk	_sbrk
 #include <unistd.h>
 
+//endbss的内存地址 见brksize.s __brksize
 extern char *_brksize;
 
 /* Both OSF/1 and SYSVR4 man pages specify that brk(2) returns int.

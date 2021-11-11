@@ -50,3 +50,6 @@ C语言
 根据定义，结构本身驻留在地址 0。因此，指向的字段（上述步骤 3）的地址必须是结构开头的偏移量（以字节为单位）
 返回ident属性偏移字节数
 #define offsetof(type, ident)	((size_t) (unsigned long) &((type *)0)->ident)
+
+
+c程序内存分布图见./参考资料/程序内存分布图.jpg

@@ -542,6 +542,7 @@ void initialize(void)
 			if (lowsec - table[p]->lowsec < table[p]->size) break;
 		}
 
+		//根据
 		if (lowsec == table[p]->lowsec) {	/* Found! */
 			if (bootdev.primary < 0)
 				bootdev.primary= p;
@@ -560,6 +561,7 @@ void initialize(void)
 		}
 
 		/* See if the primary partition is subpartitioned. */
+		//活动主分区的子分区
 		bootdev.primary= p;
 		masterpos= table[p]->lowsec;
 	}

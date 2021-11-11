@@ -76,11 +76,13 @@ malloc(size_t size)
 	return NULL;
 
   for (ntries = 0; ntries < 2; ntries++) {
+      //size<=0时if条件为false
 	if ((len = Align(size, PTRSIZE) + PTRSIZE) < 2 * PTRSIZE) {
 		errno = ENOMEM;
 		return NULL;
 	}
 	if (_bottom == 0) {
+        //第一次调用malloc
 		if ((p = _sbrk(2 * PTRSIZE)) == (char *) -1)
 			return NULL;
 		p = (char *) Align((ptrint)p, PTRSIZE);

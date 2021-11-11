@@ -526,7 +526,7 @@ _dev_boundary:
 .define _readsectors, _writesectors
 _writesectors:
 	push	bp
-	mov	bp, sp
+	mov	bp, sp      !(bp+4):bufaddr (bp+8):sector (bp+12):count
 	movb	13(bp), #0x03	! Code for a disk write
 	jmp	rwsec
 _readsectors:
