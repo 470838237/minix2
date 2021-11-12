@@ -10,6 +10,11 @@ installboot.c(r_super)->rawfs.c(readblock)->boot.c(readblock)
 6 boot.c initialize中当p < NR_PARTITIONS时为何if (lowsec == table[p]->lowsec)会存在false的分支
 
 7 为何boot.c中还未加载minix kernel就可以调研malloc函数
+答:boot.c 调用malloc时间接调用了_sbrk,_brk操作系统启动过后这两个间接调用了系统调用
+但是在boot阶段，boot和boothead.s一起链接为目标文件，因此boot阶段的_sbrk,_brk调用的是boothead.s,因而boot阶段并没有调用minix的系统调用
+同时printf也不是系统调用，调用了boothead.s _putk调用
 
 8 boot.c alarm什么意思
+
+9 boot/mkfile.c putkc语言定义问题
 

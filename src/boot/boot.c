@@ -301,7 +301,7 @@ char *readline(void)
 
     do {
         c = getch();
-
+        //\25:拒绝接收 \30:取消
         if (strchr("\b\177\25\30", c) != nil) {
             /* Backspace, DEL, ctrl-U, or ctrl-X. */
             do {
@@ -310,6 +310,7 @@ char *readline(void)
                 i--;
             } while (c == '\25' || c == '\30');
         } else if (c < ' ' && c != '\n') {
+            //\7:响铃
             putch('\7');
         } else {
             putch(c);
@@ -713,7 +714,7 @@ int b_setenv(int flags, char *name, char *arg, char *value)
  */
 {
     environment **aenv, *e;
-    //if(env==nil) aenv = &env
+    //if(env==nil) aenv = &env  env中节点那么不包含resnames
     if (*(aenv = searchenv(name)) == nil) {
         if (reserved(name)) return E_RESERVED;
         e = malloc(sizeof(*e));

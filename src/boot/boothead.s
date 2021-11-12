@@ -184,7 +184,7 @@ quit:	mov	ax, #any_key
 	push	ax
 	call	_printf
 	xorb	ah, ah			! Read character from keyboard
-	int	0x16
+	int	0x16        !从键盘读入一个字符
 reboot:	call	dev_reset
 	call	restore_video
 	int	0x19			! Reboot the system
@@ -367,7 +367,7 @@ _relocate:
 !	malloc(3).  They reboot on stack collision instead of returning -1.
 .data
 	.align	2
-break:	.data2	_end		! A fake heap pointer
+break:	.data2	_end		! A fake heap pointer ,break执行heap段
 .text
 .define _brk, __brk, _sbrk, __sbrk
 _brk:

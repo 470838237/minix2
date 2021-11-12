@@ -26,6 +26,9 @@
 #endif
 #define	PTRSIZE		((int) sizeof(void *))
 #define Align(x,a)	(((x) + (a - 1)) & ~(a - 1))
+//有些编译器无法确定pblk指向几个字节的内存单元(4/2/1),所以会出错
+//*(void **) 是告诉了编译器pblk指向void*类型的指针(编译器知道指针占用的字节数)
+//所以便可通过编译.void * 表示通用型指针，其长度与你的机器相关--一般是 4-byte
 #define NextSlot(p)	(* (void **) ((p) - PTRSIZE))
 #define NextFree(p)	(* (void **) (p))
 
