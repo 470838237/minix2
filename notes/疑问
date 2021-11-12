@@ -9,3 +9,7 @@ installboot.c(r_super)->rawfs.c(readblock)->boot.c(readblock)
 
 6 boot.c initialize中当p < NR_PARTITIONS时为何if (lowsec == table[p]->lowsec)会存在false的分支
 
+7 为何boot.c中还未加载minix kernel就可以调研malloc函数
+
+8 boot.c alarm什么意思
+
