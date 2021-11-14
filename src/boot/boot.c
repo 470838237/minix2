@@ -300,8 +300,9 @@ char *readline(void)
     line = malloc(z * sizeof(char));
 
     do {
+        //boothead.s  _getch
         c = getch();
-        //\25:拒绝接收 \30:取消
+        //\25:拒绝接收 \30:取消 \b回退光标
         if (strchr("\b\177\25\30", c) != nil) {
             /* Backspace, DEL, ctrl-U, or ctrl-X. */
             do {

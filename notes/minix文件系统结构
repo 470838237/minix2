@@ -1,0 +1,188 @@
+                                                        disk
+                                                          |
+                                                          |
+  |--------------------------|----------------------------|-------------------------------|------------------------|
+  |                          |                            |                               |                        |
+sector1(mbr)            disk-part1                  disk-part2(active)              disk-part3              disk-part4
+  |                         /|\                          /|\                             /|\                      /|\
+  |                          |                            |                               |                        |
+  |                     table entry1                 table entry2                   table entry3            table entry4
+  |                          |                            |                               |                        |
+  |                          |----------------------------|-------------------------------|------------------------|
+  |                                                       |
+  |                                                       |
+  | byte: [0-446)                                    [446,446+16*4)                                             [510,511]
+  |  master boot code                                 partition table                                          sign:0xAA55
+  |     |--------------------------------------------------|-------------------------------------------------------|
+  |                                                       /|\
+  |                                                        |
+  |                                                        |
+  |                                                        |
+  |--------------------------------------------------------|
+
+  table entry:
+  struct part_entry {
+    unsigned char bootind;	/* boot indicator 0/ACTIVE_FLAG	 */
+    unsigned char start_head;	/* head value for first sector	 */
+    unsigned char start_sec;	/* sector value + cyl bits for first sector */
+    unsigned char start_cyl;	/* track value for first sector	 */
+    unsigned char sysind;		/* system indicator		 */
+    unsigned char last_head;	/* head value for last sector	 */
+    unsigned char last_sec;	/* sector value + cyl bits for last sector */
+    unsigned char last_cyl;	/* track value for last sector	 */
+    unsigned long lowsec;		/* logical first sector		 */
+    unsigned long size;		/* size of partition in sectors	 */
+  };
+
+
+                                                           disk-partition
+                                                                 |
+                                                                 |
+         |--------------------------|----------------------------|-------------------------------|------------------------|-------------------|------------------|
+         |                          |                            |                               |                        |                   |                  |
+sector: [0-1]                      [2-3]                        [4-5]
+block:   0                          1                             3                        blocks used by           blocks used by       blocks used         blocks used
+      boot block                 super block                  no use(未使用)                 inode bit map            zone bit map        by file inode         by file
+                                                                                                                                   (root dir['/'] node number = 1)
+struct:                          super_block                                                                                            d1_inode/d2_inode
+
+typedef struct {		/* V1.x disk inode */
+  mode_t d1_mode;		/* file type, protection, etc. */
+  uid_t d1_uid;			/* user id of the file's owner */
+  off_t d1_size;		/* current file size in bytes */
+  time_t d1_mtime;		/* when was file data last changed */
+  u8_t d1_gid;			/* group number */
+  u8_t d1_nlinks;		/* how many links to this file */
+  u16_t d1_zone[V1_NR_TZONES];	/* block nums for direct, ind, and dbl ind */
+} d1_inode;
+/* Declaration of the V2 inode as it is on the disk (not in core). */
+//磁盘中inode节点
+typedef struct {		/* V2.x disk inode */
+  mode_t d2_mode;		/* file type, protection, etc. */
+  u16_t d2_nlinks;		/* how many links to this file. HACK! */
+  uid_t d2_uid;			/* user id of the file's owner. */
+  u16_t d2_gid;			/* group number HACK! */
+  off_t d2_size;		/* current file size in bytes */
+  time_t d2_atime;		/* when was file data last accessed */
+  time_t d2_mtime;		/* when was file data last changed */
+  time_t d2_ctime;		/* when was inode data last changed */
+  zone_t d2_zone[V2_NR_TZONES];	/* block nums for direct, ind, and dbl ind */
+} d2_inode;
+EXTERN struct buf {
+  /* Data portion of the buffer. */
+  union {
+    char b__data[BLOCK_SIZE];		     /* ordinary user data */
+    struct direct b__dir[NR_DIR_ENTRIES];    /* directory block */
+    zone1_t b__v1_ind[V1_INDIRECTS];	     /* V1 indirect block */
+    zone_t  b__v2_ind[V2_INDIRECTS];	     /* V2 indirect block */
+    d1_inode b__v1_ino[V1_INODES_PER_BLOCK]; /* V1 inode block */
+    d2_inode b__v2_ino[V2_INODES_PER_BLOCK]; /* V2 inode block */
+    bitchunk_t b__bitmap[BITMAP_CHUNKS];     /* bit map block */
+  } b;
+
+  /* Header portion of the buffer. */
+  struct buf *b_next;		/* used to link all free bufs in a chain */
+  struct buf *b_prev;		/* used to link all free bufs the other way */
+  struct buf *b_hash;		/* used to link bufs on hash chains */
+  block_t b_blocknr;		/* block number of its (minor) device */
+  dev_t b_dev;			/* major | minor device where block resides */
+  char b_dirt;			/* CLEAN or DIRTY */
+  char b_count;			/* number of users of this buffer */
+} buf[NR_BUFS];
+EXTERN struct super_block {
+  ino_t s_ninodes;		/* # usable inodes on the minor device */
+  zone1_t  s_nzones;		/* total device size, including bit maps etc */
+  short s_imap_blocks;		/* # of blocks used by inode bit map */
+  short s_zmap_blocks;		/* # of blocks used by zone bit map */
+  zone1_t s_firstdatazone;	/* number of first data zone */
+  short s_log_zone_size;	/* log2 of blocks/zone */
+  off_t s_max_size;		/* maximum file size on this device */
+  short s_magic;		/* magic number to recognize super-blocks */
+  short s_pad;			/* try to avoid compiler-dependent padding */
+  zone_t s_zones;		/* number of zones (replaces s_nzones in V2) */
+
+  /* The following items are only used when the super_block is in memory. */
+  struct inode *s_isup;		/* inode for root dir of mounted file sys */
+  struct inode *s_imount;	/* inode mounted on */
+  unsigned s_inodes_per_block;	/* precalculated from magic number */
+  dev_t s_dev;			/* whose super block is this? */
+  int s_rd_only;		/* set to 1 iff file sys mounted read only */
+  int s_native;			/* set to 1 iff not byte swapped file system */
+  int s_version;		/* file system version, zero means bad magic */
+  int s_ndzones;		/* # direct zones in an inode */
+  int s_nindirs;		/* # indirect zones per indirect block */
+  bit_t s_isearch;		/* inodes below this bit number are in use */
+  bit_t s_zsearch;		/* all zones below this bit number are in use*/
+} super_block[NR_SUPERS];
+
+struct direct {
+  ino_t d_ino;
+  char d_name[DIRSIZ];
+}
+
+
+                                         |-------------------> dir inode(d1_inode/d2_inode)
+                                         |                               |定位
+                                         |                              \|/
+                                         |               根据d2_zone和d2_size定位 dir content block position
+                                         |                               |解析dir content block
+                                         |                              \|/
+                                         |                 dir content block存储的结构单元direct
+                                         |                               |定位 d_ino
+                                         |                              \|/
+                                         |                       inode(d1_inode/d2_inode)
+                                         |             dir               |d2_mode?isdir
+                                         |-------------------------------|
+                                                                         |
+                                                                         |file
+                                                                        \|/
+                                                             根据d2_zone和d2_size定位file data
+
+
+                                            根据d2_zone和d2_size定位 dir content block position
+                                                                    |
+                                                                    |
+                                                 block_number =  d2_size / block_size
+                                                                    |
+                                                                    |
+                                                   zone_num = block_number>>zone_shift
+                                                                    |
+                                                                    |
+                                                       zone_num     <    nr_dzones
+                                                                    |
+                                                            zone_index = zone_num
+                                         yes(direct)                |           no(indirect)
+                           |----------------------------------------|------------------------------------|
+                           |                                                                             |
+                           |                                                                             |
+                                                                                        zone_index = zone_index - nr_dzones
+       zone_offset = block_number- zone_num<<zone_shift                                      zone_index  <   nr_indirects
+                                                                             yes                         |          no
+                                                                |----------------------------------------|------------------------------------|
+                                                                |                                                                             |
+                                                      ind_zone= d2_inode[nr_dzones]                                            d2_inode[nr_dzones+1] == 0
+                                                                                                                        yes                   |      no
+                                                                                                     |----------------------------------------|------------------------------------|
+                                                                                                     |                                                                             |
+
+
+
+
+file block offset from disk-partition : s_bfpblock;
+file inode number: t_ifile;
+boot block size : s_bblock
+super block size: s_sblock
+no use          : s_nblock
+blocks used by inode bit map size:s_uibblock
+blocks used by inode bit map size:s_uzbblock
+inodes per block : s_ipb;
+inode offset of block : s_ioob;
+s_bfpblock = s_bblock + s_sblock + s_nblock + s_uibblock + s_uzbblock + (t_ifile-1)/s_ipb
+s_ioob = (t_ifile-1)%s_ipb
+
+
+
+
+
+
+

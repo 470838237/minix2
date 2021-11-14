@@ -73,7 +73,7 @@ void *malloc(size_t size)
 
 			assert(cp->magic == MAGIC);
 			assert(cp->sacred == MAGIC);
-
+			//offset(cp, cp->size) == next 表示cp h和next是连续内存空间，因此进行合并
 			if (offset(cp, cp->size) == next) {
 				/* Join adjacent free cells. */
 				assert(next->magic == MAGIC);
@@ -86,14 +86,14 @@ void *malloc(size_t size)
 			}
 			if (size <= cp->size) break;	/* Big enough. */
 
-			/* Next cell. */
+			/* Next cell. */ 
 			pcp= &cp->next;
 		}
 
 		if (cp != nil) break;	/* Found a big enough chunk. */
 
 		/* Allocate a new chunk at the break. */
-		if ((cp= (cell_t *) sbrk(size)) == (cell_t *) -1) {
+		if ((cp= (cell_t *) sbrk(size)) == (cell_t *) -1) { // 16位模式下位0xffff
 			return nil;
 		}
 

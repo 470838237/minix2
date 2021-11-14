@@ -211,6 +211,8 @@ off_t r_vir2abs(off_t virblk)
 	block_t z, zone_index;
 	int i;
 
+	//virblk*BLOCK_SIZE 是curfil文件的偏移大小
+	//virblk为相对于curfil的偏移块
 	/* Check if virblk within file. */
 	if (virblk * BLOCK_SIZE >= curfil.i_size) return -1;
 

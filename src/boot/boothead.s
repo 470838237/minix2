@@ -644,17 +644,17 @@ getch:
 	hlt			! Play dead until interrupted (see pause())
 	movb	ah, #0x01	! Keyboard status
 	int	0x16
-	jz	0f		! Nothing typed
+	jz	0f		! Nothing typed         //不能通过bios读取键盘输入
 	xorb	ah, ah		! Read character from keyboard
 	int	0x16
 	jmp	press		! Keypress
-0:	mov	dx, line	! Serial line?
+0:	mov	dx, line	! Serial line?      //line串行端口
 	test	dx, dx
 	jz	0f
 	add	dx, #5		! Line Status Register
 	inb	dx
 	testb	al, #0x01	! Data Ready?
-	jz	0f
+	jz	0f              //端口未准备就绪
 	mov	dx, line
 	!add	dx, 0		! Receive Buffer Register
 	inb	dx		! Get character
@@ -728,7 +728,7 @@ putc:	movb	ah, #0x0E	! Print character in teletype mode
 1:	lea	dx, 5(bx)	! Line Status Register
 	inb	dx
 	testb	al, #0x20	! Transmitter Holding Register Empty?
-	jnz	0f
+	jnz	0f              ! 数字开始的标签为局部标签，  f指forward，b指back jmp 0f表示向前跳转最近的标签0:
 	call	_get_tick
 	cmp	ax, cx		! Clock ticked more than once?
 	jne	1b
