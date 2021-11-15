@@ -139,34 +139,73 @@ struct direct {
                                                              根据d2_zone和d2_size定位file data
 
 
-                                            根据d2_zone和d2_size定位 dir content block position
-                                                                    |
-                                                                    |
-                                                 block_number =  d2_size / block_size
-                                                                    |
-                                                                    |
-                                                   zone_num = block_number>>zone_shift
-                                                                    |
-                                                                    |
-                                                       zone_num     <    nr_dzones
-                                                                    |
-                                                            zone_index = zone_num
-                                         yes(direct)                |           no(indirect)
-                           |----------------------------------------|------------------------------------|
-                           |                                                                             |
-                           |                                                                             |
-                                                                                        zone_index = zone_index - nr_dzones
-       zone_offset = block_number- zone_num<<zone_shift                                      zone_index  <   nr_indirects
-                                                                             yes                         |          no
-                                                                |----------------------------------------|------------------------------------|
-                                                                |                                                                             |
-                                                      ind_zone= d2_inode[nr_dzones]                                            d2_inode[nr_dzones+1] == 0
-                                                                                                                        yes                   |      no
-                                                                                                     |----------------------------------------|------------------------------------|
-                                                                                                     |                                                                             |
+zone_shift
+V2_NR_TZONES  10
+nr_dzones = 7
 
+find block_position;
+vir_block:
+zone = block_t >> zone_shift
+zone_index = vir_block - (zone<<zone_shift)
+dzones_array:
 
-
+                                        zone < nr_dzones
+                                                |
+                 yes                            |                       no
+|-----------------------------------------------------------------------------------------------|
+|  block_position =   ind_zone_array[zone]<<zone_shift +  zone_index                            |
+|----------------------------------------|                                                      |
+                                         |                                                      |
+----------------------------------------\|/-----------------------------------------| nr_dzones | nr_dzones+1
+|      0           1           2           3           4           5           6    |      7    |      8           9
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------\|/-----------|-----------|
+|           |           |           |           |           |           |           | ind_zone  |ind_ind_zone|           |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|------------|-----------|
+                                                                                    |                        |
+                                                                                    |                        |
+                                                                                    |-----------|------------|
+                                                                                                |
+                                                                                       zone = zone - nr_dzones
+                                                                                          zone  <  nr_indirects
+                                                                                                |
+                                                                                      yes       |      no
+                                                                              |-----------------|-----------------|
+                                                                              |                                   |
+                                                                              |                                   |
+                                                                              |                                   |
+                                                                           ind_zone                           ind_ind_zone
+                                                                              |                                   |                                                                                          |
+indirect zone_t array : ind_zone_array                                        |                                   |
+ind_zone_array_length= BLOCK_SIZE/V2_ZONE_NUM_SIZE = 256                      |                                   |
+                             zone                                             |                                   |
+      0           1         ......       253         254        255           |                                   |
+|-----------|-----------|--- --------|-----------|-----------|-----------|    |                                   |
+|           |           |ind_zone_num|           |           |           |    |                                   |
+|-----------|-----------|-- --/|\----|-----------|-----------|-----------|    |                                   |
+                               |                                              |                                   |
+                               |----------------------------------------------|                                   |
+                                block =   ind_zone<<zone_shift                |                                   |
+                                 buf  = readblock(block)                      |                                   |
+                                 ind_zone_array = cast(buf)                   |                                   |
+ block_position =   ind_zone_array[zone]<<zone_shift +  zone_index            |                                   |
+                                                                              |                                   |
+                                 |--------------------------------------------|                                   |
+indirect zone_t array :          |                                                                                |
+ind_ind_zone_array               |                                                                                |
+ind_ind_zone_array_length=       |                                                                                |
+ind_zone_array_length            |                                                                                |
+      0           1           ...|...         253         254        255                                          |
+|-----------|-----------|--------|-------|-----------|-----------|-----------|                                    |
+|           |           |  ind_zone_num  |           |           |           |                                    |
+|-----------|-----------|-------/|\------|-----------|-----------|-----------|                                    |
+                                 |                                                                                |                                                                                                                  |
+                                 |--------------------------------------------------------------------------------|
+                                              block =  ind_ind_zone<<zone_shift
+                                              buf  = readblock(block)
+                                              ind_ind_zone_array = cast(buf)
+                                              i = zone/nr_indirects
+                                              zone = zone%nr_indirects
+                                              ind_zone_num = ind_ind_zone_array[i]
 
 file block offset from disk-partition : s_bfpblock;
 file inode number: t_ifile;
