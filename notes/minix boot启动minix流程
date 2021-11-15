@@ -14,7 +14,7 @@ masterboot.s(master:)
     |
     |
    \ /
-#被主引导程序masterboot加载到0x7C000
+#被主引导程序masterboot加载到0x7C00
 #该程序加载boothead.s程序到内存0x10000
 #即boothead.s(boot:),然后跳转执行0x10030
 bootblock.s(boot:)

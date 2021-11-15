@@ -393,6 +393,8 @@ int raw_install(char *file, off_t *start, off_t *len)
 		}
 
 		if (off == RATIO - 1) writeblock(sec / RATIO, buf);
+        //*len=0时永远表达式true
+        //当fread读到文件尾才会结束循环
 	} while (++sec != *start + *len);
 
 	if (ferror(f)) fatal(file);

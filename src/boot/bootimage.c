@@ -611,6 +611,7 @@ ino_t latest_version(char *version, struct stat *stp)
 
 	if (S_ISREG(stp->st_mode) && stp->st_mtime > mtime) {
 		newest= ino;
+        //version参数值传递,因此每个子例程version都是没有变化
 		strcpy(version, name);
 	} else {
 		stp->st_mtime= mtime;
