@@ -447,7 +447,7 @@ int activate;
 
 struct biosdev {
     char name[8];
-    int device, primary, secondary;
+    int device, primary, secondary;//secondary  活动分区第一个扇区记录也记录了分区表，分区表中记录了活动分区
 } bootdev, tmpdev;
 
 int get_master(char *master, struct part_entry **table, u32_t pos)
@@ -456,6 +456,7 @@ int get_master(char *master, struct part_entry **table, u32_t pos)
     int r, n;
     struct part_entry *pe, **pt;
 
+    //success return 0,error return bios error number
     if ((r = readsectors(mon2abs(master), pos, 1)) != 0) return r;
 
     pe = (struct part_entry *) (master + PART_TABLE_OFF);
@@ -556,7 +557,7 @@ void initialize(void) {
             if (lowsec - table[p]->lowsec < table[p]->size) break;
         }
 
-        //根据
+        //
         if (lowsec == table[p]->lowsec) {    /* Found! */
             if (bootdev.primary < 0)
                 bootdev.primary = p;
@@ -575,7 +576,6 @@ void initialize(void) {
         }
 
         /* See if the primary partition is subpartitioned. */
-        //活动主分区的子分区
         bootdev.primary = p;
         masterpos = table[p]->lowsec;
     }
@@ -1062,6 +1062,8 @@ dev_t name2dev(char *name)
     } else if ((n[0] == 'h' || n[0] == 's') && n[1] == 'd' && numprefix(n + 2, &s)
                && (*s == 0 || (between('a', *s, 'd') && s[1] == 0))
             ) {
+        //hd(number)   hd(number)(a-z)  hd(a-z)
+        //sd(number)   sd(number)(a-z)  sd(a-z)
         /* Old style hard disk (backwards compatibility.) */
         dev = a2l(n + 2);
         tmpdev.device = dev / (1 + NR_PARTITIONS);
@@ -1343,7 +1345,7 @@ void boot_device(char *devname)
     device = save_dev;
     (void) dev_open();
 }
-
+//DOS所提供的CTTY命令,将标准的输入(一般指键盘)、输出(一般指显示器)设备重定向
 void ctty(char *line) {
     if (between('0', line[0], '3') && line[1] == 0) {
         serial_init(line[0] - '0');
@@ -1802,6 +1804,7 @@ void execute(void)
         /* Command to check bootparams: */
         if (strcmp(name, ":") == 0) ok = 1;
 
+        //:main  执行 name为main的操作
         /* User defined function. */
         if (!ok && (body = b_body(name)) != nil) {
             (void) tokenize(&cmds, body);

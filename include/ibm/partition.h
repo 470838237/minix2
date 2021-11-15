@@ -17,6 +17,7 @@ struct part_entry {
 
 #define ACTIVE_FLAG	0x80	/* value for active in bootind field (hd0) */
 #define NR_PARTITIONS	4	/* number of entries in partition table */
+//446
 #define	PART_TABLE_OFF	0x1BE	/* offset of partition table in boot sector */
 
 /* Partition types. */

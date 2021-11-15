@@ -871,7 +871,7 @@ serial_init:
 	int	0x14		! Initialize serial line dx
 	lea	dx, 4(bx)	! Modem Control Register
 	movb	al, #0x0B	! DTR, RTS, OUT2
-	outb	dx
+	outb	dx      !将ax数据写入端口号dx中
 0:	ret
 
 ! u32_t get_tick(void);
