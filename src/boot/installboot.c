@@ -656,7 +656,7 @@ void make_bootable(enum howto how, char *device, char *bootblock,
 			 */
 			label= labels;
 			if ((labels= strchr(labels, ',')) != nil) *labels++ = 0;
-
+            //只有kernel image才会有label,即有label的image被标识为kernel image
 			sprintf(parmp,
 		"%s(%c){label=%s;image=%ld:%ld;echo %s kernel selected;menu}\n",
 				label,

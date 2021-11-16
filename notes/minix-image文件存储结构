@@ -1,0 +1,73 @@
+flag = image_header.a_flags
+
+
+flag&A_PAL==1    flag&A_SEP = 1
+
+|-----------------------|
+|                       |
+|     image_header      |
+|                       |   text段 = image_header+text
+|                       |
+|       text            |
+|                       |
+|-----------------------|扇区对齐
+|                       |
+|                       |
+|       data            |   data段 = data
+|                       |
+|                       |
+|                       |
+|-----------------------|扇区对齐
+
+
+flag&A_PAL==0       flag&A_SEP = 1
+
+|-----------------------|
+|      image_header     |   文件头 = image_header
+|-----------------------|扇区对齐
+|                       |
+|       text            |   text段 = text
+|                       |
+|-----------------------|扇区对齐
+|                       |
+|                       |
+|        data           |   data段 = data
+|                       |
+|                       |
+|                       |
+|-----------------------|
+
+flag&A_PAL = 1      flag&A_SEP = 0
+
+|-----------------------|
+|                       |
+|                       |
+|      image_header     |
+|                       |  text段 = image_header+text
+|                       |
+|        text           |
+|                       |
+|                       |
+|        data           |  data段 = data + text
+|                       |
+|                       |
+|                       |
+|-----------------------|扇区对齐
+
+
+flag&A_PAL = 0      flag&A_SEP = 0
+
+
+|-----------------------|
+|      image_header     |  文件头
+|-----------------------|  扇区对齐
+|                       |
+|                       |
+|        text           |
+|                       |
+|                       |
+|        data           |  data段 = data + text
+|                       |
+|                       |
+|                       |
+|-----------------------|扇区对齐

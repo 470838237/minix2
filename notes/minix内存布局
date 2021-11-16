@@ -90,10 +90,20 @@ minix kernel image  override 0x00800 to newaddr
 |-------------------|0xf0000
 |       boot        |
 | (exclude header)  |
-|-------------------|newaddr = 0xf0000-runsize
-|    minix kernel   |
-|    image zone     |size = mem[1]=newaddr - 2048
-|-------------------|0x00800 = mem[0] = 0+2048
+|-------------------|newaddr = 0xf0000-runsize-------------------------------------|
+|   image header    |  size =   16*32                                              |
+| ----------------  |aout addr = newaddr - 16*32                                   |
+|                   |size = mem[1]=newaddr - 2048
+|    image zone     |
+|                   |
+|  ---------------- |
+|                   |
+|                   |
+|  ---------------- |kernel_cs_end_adr = kernel_cs_start_adr+text_size+
+|  minix kernel     | size = click_size
+|-------------------|kernel_cs_start_adr=  (0x00800+click_size-1)&~(click_size-1)
+|   ............    |
+|-------------------|0x00800 = mem[0] = 0+2048---|
 |   master boot     |
 |-------------------|0x00600
 |    BIOS数据区以及   |

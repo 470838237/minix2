@@ -1803,8 +1803,10 @@ void execute(void)
 
         /* Command to check bootparams: */
         if (strcmp(name, ":") == 0) ok = 1;
-
-        //:main  执行 name为main的操作
+        //b_setenv(E_RESERVED | E_FUNCTION, null, "=,Start Minix", "boot");
+        //(void) tokenize(acmds, ":;leader;main");
+        //name=":" 时 strcmp(name, ":")返回false name=""   body = b_body(name) 返回 "boot"
+        //第一条cmd为启动minix系统
         /* User defined function. */
         if (!ok && (body = b_body(name)) != nil) {
             (void) tokenize(&cmds, body);
