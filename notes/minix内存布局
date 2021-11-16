@@ -53,7 +53,7 @@ and load bootblock from disk to 0x07f00
 |-------------------|0x00000
 
 4  copy boot from 0x10000 to newaddr and relocate
-runsize = boot_text+boot_data(include bss)
+runsize = text + data + bss + heap + stack
 
 |-------------------|0x100000
 |   ............    |
@@ -83,3 +83,21 @@ runsize = boot_text+boot_data(include bss)
 |-------------------|0x00000
 
 5 boot load minix kernel image
+minix kernel image  override 0x00800 to newaddr
+
+|-------------------|0x100000
+|   ............    |
+|-------------------|0xf0000
+|       boot        |
+| (exclude header)  |
+|-------------------|newaddr = 0xf0000-runsize
+|    minix kernel   |
+|    image zone     |size = mem[1]=newaddr - 2048
+|-------------------|0x00800 = mem[0] = 0+2048
+|   master boot     |
+|-------------------|0x00600
+|    BIOS数据区以及   |
+|    端口号存放区     |
+|-------------------|0x00400
+|      中断向量      |
+|-------------------|0x00000
