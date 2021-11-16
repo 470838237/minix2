@@ -96,11 +96,14 @@ minix kernel image  override 0x00800 to newaddr
 |                   |size = mem[1]=newaddr - 2048
 |    image zone     |
 |                   |
-|  ---------------- |
-|                   |
-|                   |
-|  ---------------- |kernel_cs_end_adr = kernel_cs_start_adr+text_size+
-|  minix kernel     | size = click_size
+|  ---------------- | click_size对齐
+|   kernel   stack  |
+|  ---------------- | click_size对齐
+|   kernel   bss    |
+|  ---------------- | click_size对齐
+|   kernel   data   | flag&A_SEP==0 时data包含text和data,并且text和data之间没有click_size对齐
+|  ---------------- | click_size对齐
+|   kernel   text   | flag&A_PAL==1时 text包含image_header
 |-------------------|kernel_cs_start_adr=  (0x00800+click_size-1)&~(click_size-1)
 |   ............    |
 |-------------------|0x00800 = mem[0] = 0+2048---|
