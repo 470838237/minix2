@@ -1055,7 +1055,7 @@ noret86:
 minix386:
   cseg	mov	cs_real-2, cs	! Patch CS and DS into the instructions that
   cseg	mov	ds_real-2, ds	! reload them when switching back to real mode
-	.data1	0x0F,0x20,0xC0	! mov	eax, cr0
+	.data1	0x0F,0x20,0xC0	! mov	eax, cr0  cr0 控制寄存器
 	orb	al, #0x01	! Set PE (protection enable) bit
 	.data1	o32
 	mov	msw, ax		! Save as protected mode machine status word
