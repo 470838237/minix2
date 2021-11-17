@@ -1010,7 +1010,7 @@ _minix:
 	push	ds
 	xor	ax, ax		! Vector & BIOS data segments
 	mov	ds, ax
-	andb	0x043F, #0xF0	! Clear diskette motor status bits of BIOS
+	andb	0x043F, #0xF0	! Clear diskette motor status bits of BIOS  0x043F应该是内存地址,0x0400之上是端口号存放地址
 	pop	ds
 	cli			! No more interruptions
 
@@ -1058,8 +1058,9 @@ minix386:
 	.data1	0x0F,0x20,0xC0	! mov	eax, cr0  cr0 控制寄存器
 	orb	al, #0x01	! Set PE (protection enable) bit
 	.data1	o32
-	mov	msw, ax		! Save as protected mode machine status word
-
+	mov	msw, ax		! Save as protected mode machine status word Intel在80286 CPU中引入了一个16位的机器状态字寄存器MSW。在80386及其后续的CPU中已经把MSW扩展为4个32位控制寄存器CR0、CR1、CR2和CR3，原来的MSW功能由CR0的低16位来实现。
+    !mov ax和mov eax的机器代码是一样的。默认情况下，如果当前是16位码段，就解释为mov ax；如果是32为码段，就解释为mov eax。那么假如要在32位码段中执行mov ax该怎么办呢？这时就在指令前面加上一个字节的前缀来表示。
+    ! 另外还有一种前缀是用来区分32位寻址方式和16位寻址方式的。
 	mov	dx, ds		! Monitor ds
 	mov	ax, #p_gdt	! dx:ax = Global descriptor table
 	call	seg2abs
@@ -1112,8 +1113,8 @@ minix386:
 noret386:
 
 	push	#0
-	push	#CS_SELECTOR
-	push	6(bp)       !retf 指令将6(bp)送入cs寄存器,6(bp)
+	push	#CS_SELECTOR    !retf 指令将#CS_SELECTOR送入cs寄存器
+	push	6(bp)       !
 	push	4(bp)		! 32 bit far address to kernel entry point  retf 指令将4(bp)送入eip寄存器,
 
 	call	real2prot	! Switch to protected mode
@@ -1386,7 +1387,7 @@ gate_PS_A20:		! The PS/2 can twiddle A20 using port A
 	andb	al, #0xFD
 	orb	al, ah		! Set A20 bit to the required state
 	outb	0x92		! Write port A
-	jmp	.+2		! Small delay
+	jmp	.+2		! Small delay  跳转当前地址+2的目标指令即 inb	0x92
 A20ok:	inb	0x92		! Check port A
 	andb	al, #0x02
 	cmpb	al, ah		! A20 line settled down to the new state?
