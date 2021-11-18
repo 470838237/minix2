@@ -31,15 +31,15 @@
 #define K_I386     0x0001    /* Make the 386 transition before you call me. */
 #define K_CLAIM     0x0002    /* I will acquire my own bss pages, thank you. */
 #define K_CHMEM  0x0004    /* This kernel listens to chmem for its stack size. */
-#define K_HIGH   0x0008    /* Load mm, fs, etc. in extended memory. */
+#define K_HIGH   0x0008    /* Load mm, fs, etc. in extended memory. */  //copy非kernel映像到扩展空间例如fs,mm
 #define K_HDR     0x0010    /* No need to patch sizes, kernel uses the headers. */
 #define K_RET     0x0020    /* Returns to the monitor on reboot. */
 #define K_INT86     0x0040    /* Requires generic INT support. */
-#define K_MEML     0x0080    /* Pass a list of free memory. */
-#define K_BRET     0x0100    /* New monitor code on shutdown in boot parameters. */
+#define K_MEML     0x0080    /* Pass a list of free memory. */  //检测到该标志时将所有image拷贝到aout空间中  memory list
+#define K_BRET     0x0100    /* New monitor code on shutdown in boot parameters. */ //检测到该标志时使用之前旧的params参数,而不是内核返回的reboot_code作为monitor参数
 #define K_ALL     0x01FF    /* All feature bits this monitor supports. */
-
-
+//88 flags  1 1011 0100
+//386flags  1 1111 1101
 /* Data about the different processes. */
 
 #define PROCESS_MAX    16    /* Must match the space in kernel/mpx.x */

@@ -513,6 +513,9 @@ void initialize(void) {
      * and also keep the BIOS data area safe (1.5K), plus a bit extra for
      * where we may have to put a.out headers for older kernels.
      */
+    //bootimage.c中 kernel映射内存限制limit = mem[0].base + limit = mem[0].size
+    //当有扩展内存空间且足够时保留monitor,newaddr为monitor内存低端,mem[0].size = newaddr避免在bootimage.c中kernel映射到内存时覆盖掉monitor程序
+    //monitor保留在内存中方便kerne返回到monitor
     if (mon_return = (mem[1].size > 512 * 1024L)) mem[0].size = newaddr;
     mem[0].base += 2048;
     mem[0].size -= 2048;

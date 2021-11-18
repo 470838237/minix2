@@ -1031,7 +1031,7 @@ minix86:
 	jz	noret86
 	xor	dx, dx		! If little ext mem then monitor not preserved
 	xor	ax, ax
-	cmp	_mon_return, ax	! Minix can return to the monitor?
+	cmp	_mon_return, ax	! Minix can return to the monitor?  _mon_return 为 1时表明monitor未被kernel覆盖，可以从kernel返回到monitor
 	jz	0f
 	mov	dx, cs		! Monitor far return address
 	mov	ax, #ret86
@@ -1109,7 +1109,7 @@ minix386:
 	test	_k_flags, #K_RET ! Can the kernel return?
 	jz	noret386
 	push	#MCS_SELECTOR
-	push	#ret386		! Monitor far return address
+	push	#ret386		! Monitor far return address        为 1时表明monitor未被kernel覆盖，可以从kernel返回到monitor
 noret386:
 
 	push	#0
@@ -1285,7 +1285,7 @@ intret:	int	0xFF		! Do the interrupt or far call
 	pushf
 	mov	bp, sp
 	.data1	o32
-	pop	8+8(bp)		! eflags
+	pop	8+8(bp)		! eflags  之所以+8是相对于int86时做了o32 pushf和o32  push	bp操作导致sp-8
 	mov	8+16(bp), ds
 	mov	8+18(bp), es
 	.data1	o32
@@ -1347,17 +1347,17 @@ prot2real:
 	mov	pdbr, ax	! Save page directory base register
 	.data1	0x0F,0x20,0xC0	! mov	eax, cr0
 	.data1	o32
-	xchg	ax, msw		! Exchange protected mode msw for real mode msw
+	xchg	ax, msw		! Exchange protected mode msw for real mode msw  msw并非寄存器名称而是内存地址标识
 	.data1	0x0F,0x22,0xC0	! mov	cr0, eax
-	jmpf	cs_real, 0xDEAD	! Reload cs register
+	jmpf	cs_real, 0xDEAD	! Reload cs register  0xDEAD—>monitor cs
 cs_real:
-	mov	ax, #0xBEEF
+	mov	ax, #0xBEEF         ! 0xBEEF->monitor ds
 ds_real:
 	mov	ds, ax		! Reload data segment registers
 	mov	es, ax
 	mov	ss, ax
 
-	xorb	ah, ah		! Code for A20 disable
+	xorb	ah, ah		! Code for A20 disable  实模式下关闭a20地址线
 	!jmp	gate_A20
 
 ! Enable (ah = 0x02) or disable (ah = 0x00) the A20 address line.

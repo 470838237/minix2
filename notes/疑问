@@ -1,8 +1,11 @@
 1 什么是monitor
+答:monitor是设置操作系统启动参数的监控程序
 2 monitor address是什么?
+答:monitor address是segment:offset逻辑地址
 installboot.c(r_super)->rawfs.c(readblock)->boot.c(readblock)
 在32位系统上installboot.c和rawfs.c被编译器为32位boot安装程序,rawfs.c和boot.c及其他程序被编译为16位boot monitor程序(boot monitor被boot程序安装到硬盘用于启动minix系统)
 3 32位安装程序如何调用16位程序函数readblock呢？
+
 4 boot.c中mon2abs函数如何理解?
 答:实模式下segment:offset转换为线性地址即真实地址
 5 masterboot.s zero标识地址起始扇区是如何被写入的
@@ -17,4 +20,20 @@ installboot.c(r_super)->rawfs.c(readblock)->boot.c(readblock)
 8 boot.c alarm什么意思
 
 9 boot/mkfile.c putkc语言定义问题
+
+10 bootimage.c  if (hdr.process.a_flags & A_UZP) procp->cs -= click_size;
+A_UZP什么意思为什么要减去click_size,这样cs未指向代码段的起始地址，映射会出错？
+
+11 bootimage.c 中 if (i == 0 && (k_flags & K_HIGH)) {
+                           /* Load the rest in extended memory. */
+                           addr = mem[1].base;
+                           limit = mem[1].base + mem[1].size;
+                       }为何在a20地址线未开启时可以访问到mem[1]扩展内存呢，该内存大于1m,猜测应该是第一次通电启动操作系统时k_flags & K_HIGH为false,
+因此第一次系统启动不能讲映像拷贝至扩展内存，系统启动后设置了k_flags的K_HIGH标志位，系统重启返回到monitor再次加载时将该标志位被置位因此被加载到扩展内存中
+
+答:猜测是错误的,bios int 15,ah=87提供了扩展读写的功能,boothead.s的_raw_copy例程使用了该功能
+
+12  bootimage.c  if (k_flags & (K_HIGH | K_MEML)) return; 如何理解？
+13 bootimage.c K_CHMEM 作用是什么
+
 
