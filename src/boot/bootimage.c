@@ -487,7 +487,7 @@ void exec_image(char *image)
         procp->entry = hdr.process.a_entry;
         if (hdr.process.a_flags & A_PAL) a_text += hdr.process.a_hdrlen;
         if (hdr.process.a_flags & A_UZP) procp->cs -= click_size;
-
+        //推测当标志位A_UZP时,image 地址空间的起始偏移从click_size起始计算的，该推测待验证
         /* Separate I&D: two segments.  Common I&D: only one. */
         if (hdr.process.a_flags & A_SEP) {
             /* Read the text segment. */
