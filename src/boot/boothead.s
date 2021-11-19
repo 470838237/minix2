@@ -1058,8 +1058,7 @@ minix386:
 	.data1	0x0F,0x20,0xC0	! mov	eax, cr0  cr0 控制寄存器
 	orb	al, #0x01	! Set PE (protection enable) bit
 	.data1	o32
-	mov	msw, ax		! Save as protected mode machine status word Intel在80286 CPU中引入了一个16位的机器状态字寄存器MSW。在80386及其后续的CPU中已经把MSW扩展为4个32位控制寄存器CR0、CR1、CR2和CR3，原来的MSW功能由CR0的低16位来实现。
-    !mov ax和mov eax的机器代码是一样的。默认情况下，如果当前是16位码段，就解释为mov ax；如果是32为码段，就解释为mov eax。那么假如要在32位码段中执行mov ax该怎么办呢？这时就在指令前面加上一个字节的前缀来表示。
+	mov	msw, ax		! Save as protected mode machine status word Intel
     ! 另外还有一种前缀是用来区分32位寻址方式和16位寻址方式的。
 	mov	dx, ds		! Monitor ds
 	mov	ax, #p_gdt	! dx:ax = Global descriptor table
@@ -1248,11 +1247,11 @@ int86:
 	movb	al, #0xCD	! INT instruction
 	movb	ah, 8(bp)	! Interrupt number?
 	testb	ah, ah
-	jnz	0f		! Nonzero if INT, otherwise far call
+	jnz	0f		! Nonzero if INT, otherwise far call 如果中断号不为0就做bios中断请求
 	push	cs
-	push	#intret+2	! Far return address
+	push	#intret+2	! Far return address       处理完毕跳转到intret+2地址执行参数返回已经切换到保护模式
 	.data1	o32
-	push	12(bp)		! Far driver address
+	push	12(bp)		! Far driver address 否则跳转到相应的驱动例程处理
 	mov	ax, #0x90CB	! RETF; NOP
 0:
  cseg	cmp	ax, intret	! Needs to be changed?
@@ -1480,7 +1479,7 @@ p_ss_desc:
 p_cs_desc:
 	! Kernel code segment descriptor (4 Gb flat)
 	.data2	0xFFFF, UNSET
-	.data1	UNSET, 0x9A, 0xCF, 0x00
+	.data1	UNSET, 0x9A, 0xCF, 0x00 !1100 1111 1001 1010
 p_mcs_desc:
 	! Monitor code segment descriptor (64 kb flat)
 	.data2	0xFFFF, UNSET

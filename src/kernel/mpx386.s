@@ -16,7 +16,20 @@
 ! by hardware interrupts.  The count of reentries is kept in "k_reenter".
 ! It is important for deciding whether to switch to the kernel stack and
 ! for protecting the message passing code in "proc.c".
+! 中断可以被嵌套,初始中断可以是系统调用，异常和硬件中断，再入中断只能是硬件中断,再入中断保存在k_reenter中，
+! k_reenter决定哪些再入中断可以被换入kernel堆栈,并且通过proc.c保存消息
 
+!对于消息陷阱发生时(应该是系统调用),大部分机器状态被保存(部分寄存器未被保存)在proc table(进程表,用于进程管理),然后运行栈切换到k_stack(kernel stack)
+!并且设置中断可被重入(即中断可以嵌套),然后执行系统调用的处理程序,当系统调用的处理程序执行完毕时，中断位再次被禁用,
+!执行流程返回到mpx386.s _restart例程结束中断，然后执行proc_ptr指向的进程或任务程序
+!硬件中断处理流程和消息陷阱基本一致除了以下几点:
+!1 所有的状态必须被保存
+!2
+!3 已经切换到核心栈时避免再次切换(待理解)
+!4 259硬件中断控制器在mpx386.s save例程中被再次职位(?待验证)
+!5
+
+!处理程序太多，无法内联执行此操作，因此调用save例程。通过按下适当的重启例程的地址以备稍后返回，可以节省一些周期
 ! For the message passing trap, most of the machine state is saved in the
 ! proc table.  (Some of the registers need not be saved.)  Then the stack is
 ! switched to "k_stack", and interrupts are reenabled.  Finally, the system
@@ -37,7 +50,7 @@
 ! For communication with the boot monitor at startup time some constant
 ! data are compiled into the beginning of the text segment. This facilitates 
 ! reading the data at the start of the boot process, since only the first
-! sector of the file needs to be read.
+! sector of the file needs to be read.      flags: read by boot
 
 ! Some data storage is also allocated at the end of this file. This data 
 ! will be at the start of the data segment of the kernel and will be read
@@ -146,7 +159,7 @@ noret:	mov	(_mon_sp), esp	! save stack pointer for later return
 
 ! Copy the monitor global descriptor table to the address space of kernel and
 ! switch over to it.  Prot_init() can then update it with immediate effect.
-
+    ! mon_sp  mon_return gdt 定义在kernel/glo.h
 	sgdt	(_gdt+GDT_SELECTOR)		! get the monitor gdtr
 	mov	esi, (_gdt+GDT_SELECTOR+2)	! absolute address of GDT
 	mov	ebx, _gdt			! address of kernel GDT
@@ -159,8 +172,8 @@ copygdt:
 	loop	copygdt
 	mov	eax, (_gdt+DS_SELECTOR+2)	! base of kernel data
 	and	eax, 0x00FFFFFF			! only 24 bits
-	add	eax, _gdt			! eax = vir2phys(gdt)
-	mov	(_gdt+GDT_SELECTOR+2), eax	! set base of GDT
+	add	eax, _gdt			! eax = vir2phys(gdt)数据段的基址加_gdt(gdt偏移地址) = gdt的物理地址
+	mov	(_gdt+GDT_SELECTOR+2), eax	! set base of GDT  将gdt的物理地址设置为gdt描述符表的基址
 	lgdt	(_gdt+GDT_SELECTOR)		! switch over to kernel GDT
 
 ! Locate boot parameters, set up kernel segment registers and stack.
