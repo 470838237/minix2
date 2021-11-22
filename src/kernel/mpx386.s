@@ -186,6 +186,7 @@ copygdt:
 	mov	fs, ax
 	mov	gs, ax
 	mov	ss, ax
+	mov	ss, ax
 	mov	esp, k_stktop	! set sp to point to the top of kernel stack
 
 ! Call C startup code to set up a proper environment to run main().
@@ -195,7 +196,7 @@ copygdt:
 	push	DS_SELECTOR
 	push	CS_SELECTOR
 	call	_cstart		! cstart(cs, ds, mds, parmoff, parmlen)
-	add	esp, 5*4
+	add	esp, 5*4        !释放参数
 
 ! Reload gdtr, idtr and the segment registers to global descriptor table set
 ! up by prot_init().

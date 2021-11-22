@@ -45,6 +45,7 @@ int mine;
   int i;
 
   lock();
+  //https://blog.csdn.net/qq_43546328/article/details/109680374 8259a编程资料
   if (protected_mode) {
 	/* The AT and newer PS/2 have two interrupt controllers, one master,
 	 * one slaved at IRQ 2.  (We don't have to deal with the PC that
@@ -77,6 +78,7 @@ int mine;
 	 * exceptions here, the interrupt vectors are reprogrammed on demand.
 	 * SYS_VECTOR is the Minix system call for message passing.
 	 */
+
 	for (i = 0; i < 8; i++) set_vec(i, int_vec[i]);
 	set_vec(SYS_VECTOR, s_call);
   }
