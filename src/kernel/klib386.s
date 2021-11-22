@@ -418,8 +418,8 @@ _phys_copy:
 	jb	pc_small
 	mov	ecx, esi		! align source, hope target is too
 	neg	ecx
-	and	ecx, 3			! count for alignment
-	sub	eax, ecx
+	and	ecx, 3			! count for alignment  ecx的负数低3位+正数表示->导致ecx的低3位进位，且低3位变为0，从而实现4字节对齐，即复制起始地址对齐
+	sub	eax, ecx        ! 先一字节复制直到esi对齐，然后再4字节复制，直到cx为0 ，再1字节复制直到完全复制
 	rep
    eseg	movsb
 	mov	ecx, eax
