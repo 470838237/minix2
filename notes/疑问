@@ -35,5 +35,6 @@ A_UZP什么意思为什么要减去click_size,这样cs未指向代码段的起�
 
 12  bootimage.c  if (k_flags & (K_HIGH | K_MEML)) return; 如何理解？
 13 bootimage.c K_CHMEM 作用是什么
+14 区分任务门，调用门，中断门，陷阱门 资料https://blog.csdn.net/barech/article/details/4401417
 
 
