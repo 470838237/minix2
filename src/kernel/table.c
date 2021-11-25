@@ -71,6 +71,7 @@
 	SYS_STACK + SB16_STACK + SB16MIXER_STACK)
 
 
+
 /*
  * Some notes about the following table:
  *  1) The tty_task should always be first so that other tasks can use printf

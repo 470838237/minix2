@@ -88,6 +88,7 @@ PUBLIC void main()
 	 */
 	phys_copy(aout + hdrindex * A_MINHDR, vir2phys(&e_hdr),
 							(phys_bytes) A_MINHDR);
+	//bootimage.c  hdr.process.a_syms = addr;
 	text_base = e_hdr.a_syms >> CLICK_SHIFT;
 	text_clicks = (e_hdr.a_text + CLICK_SIZE-1) >> CLICK_SHIFT;
 	if (!(e_hdr.a_flags & A_SEP)) text_clicks = 0;	/* Common I&D */

@@ -176,6 +176,7 @@ PUBLIC void prot_init()
    * current process's registers ip:cs:f:sp:ss in the correct slots in the
    * process table.
    */
+  //Task State Segment
   tss.ss0 = DS_SELECTOR;
   init_dataseg(&gdt[TSS_INDEX], vir2phys(&tss), sizeof(tss), INTR_PRIVILEGE);
   gdt[TSS_INDEX].access = PRESENT | (INTR_PRIVILEGE << DPL_SHIFT) | TSS_TYPE;
