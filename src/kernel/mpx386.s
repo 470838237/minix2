@@ -362,7 +362,7 @@ save:
 	mov	esp, k_stktop
 	push	_restart	! build return address for int handler
 	xor	ebp, ebp	! for stacktrace
-	jmp	RETADR-P_STACKBASE(eax)
+	jmp	RETADR-P_STACKBASE(eax)  !硬件中断时call指令push save调用的下一条指令地址，使用jmp不用ret,是因为ret会弹出地址，但此处不需要该操作
 
 	.align	4
 set_restart1:
@@ -428,7 +428,7 @@ restart1:
     o16	pop	fs
     o16	pop	es
     o16	pop	ds
-	popad
+	popad           ! popad弹出通用寄存器eax, ebx,ecx,edx,esi,edi,ebp,esp
 	add	esp, 4		! skip return adr
 	iretd			! continue process
 
