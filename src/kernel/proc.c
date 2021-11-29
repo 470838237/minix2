@@ -74,7 +74,7 @@ int task;			/* number of task to be started */
    */
   if (k_reenter != 0 || switching) {
 	lock();
-	if (!rp->p_int_held) {
+	if (!rp->p_int_held) {  //held_head链表中同一个任务只能存在一个
 		rp->p_int_held = TRUE;
 		if (held_head != NIL_PROC)
 			held_tail->p_nextheld = rp;
