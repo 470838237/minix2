@@ -23,6 +23,8 @@ installboot.c(r_super)->rawfs.c(readblock)->boot.c(readblock)
 
 10 bootimage.c  if (hdr.process.a_flags & A_UZP) procp->cs -= click_size;
 A_UZP什么意思为什么要减去click_size,这样cs未指向代码段的起始地址，映射会出错？
+答:当映像section的虚拟地址起始地址不是从0开始,而是从click_size作为虚拟地址的起始地址时需要这样处理，因为ds和cs都要指向虚拟地址0所对应的物理地址。当起始地址
+不为0时需要空出0到起始距离的物理内存
 
 11 bootimage.c 中 if (i == 0 && (k_flags & K_HIGH)) {
                            /* Load the rest in extended memory. */
