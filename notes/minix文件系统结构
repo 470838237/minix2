@@ -41,8 +41,8 @@ sector1(mbr)            disk-part1                  disk-part2(active)          
          |--------------------------|----------------------------|-------------------------------|------------------------|-------------------|------------------|
          |                          |                            |                               |                        |                   |                  |
 sector: [0-1]                      [2-3]                        [4-5]
-block:   0                          1                             3                        blocks used by           blocks used by       blocks used         blocks used
-      boot block                 super block                  no use(未使用)                 inode bit map            zone bit map        by file inode         by file
+block:   0                          1                        blocks used by                      3                  blocks used by       blocks used         blocks used
+      boot block                 super block                 inode bit map                    no use(未使用)         zone bit map        by file inode         by file
                                                                                                                                    (root dir['/'] node number = 1)
 struct:                          super_block                                                                                            d1_inode/d2_inode
 
