@@ -9,7 +9,6 @@
 
 struct super_block;		/* proto.h needs to know this */
 
-#include "fs.h"
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
@@ -17,6 +16,8 @@ struct super_block;		/* proto.h needs to know this */
 #include <sys/svrctl.h>
 #include <minix/callnr.h>
 #include <minix/com.h>
+#include <minix/const.h>
+#include <minix/config.h>
 #include "buf.h"
 #include "dev.h"
 #include "file.h"
@@ -24,6 +25,7 @@ struct super_block;		/* proto.h needs to know this */
 #include "inode.h"
 #include "param.h"
 #include "super.h"
+#include "fs.h"
 
 FORWARD _PROTOTYPE( void buf_pool, (void)				);
 FORWARD _PROTOTYPE( void fs_init, (void)				);
