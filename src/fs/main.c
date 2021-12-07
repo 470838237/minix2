@@ -238,6 +238,7 @@ PRIVATE void load_ram()
   Dev_t image_dev;
 
   /* Get some boot environment variables. */
+  //if ((dev = name2dev(value)) == -1) return 0;  bootimage.c
   root_dev = igetenv("rootdev");
   image_dev = igetenv("ramimagedev");
   ram_size = igetenv("ramsize");

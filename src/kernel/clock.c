@@ -61,8 +61,8 @@
 #define LATCH_COUNT     0x00	/* cc00xxxx, c = channel, x = any */
 #define SQUARE_WAVE     0x36	/* ccaammmb, a = access, m = mode, b = BCD */
 				/*   11x11, 11 = LSB then MSB, x11 = sq wave */
-#define TIMER_COUNT ((unsigned) (TIMER_FREQ/HZ)) /* initial value for counter*/
-#define TIMER_FREQ  1193182L	/* clock frequency for timer in PC and AT */
+#define TIMER_COUNT ((unsigned) (TIMER_FREQ/HZ)) /* initial value for counter*/ //clock hardware produce interrupt per TIMER_COUNT ticks,相当于每秒产生60次时钟中断
+#define TIMER_FREQ  1193182L	/* clock frequency for timer in PC and AT */ // TIMER_FREQ ticks per second
 
 #define CLOCK_ACK_BIT	0x80	/* PS/2 clock interrupt acknowledge bit */
 #endif
@@ -180,6 +180,9 @@ PRIVATE void do_clocktick()
 
 /*===========================================================================*
  *				tmr_settimer				     *
+ *				每次Clock任务触发时检查当前运行任务的timer是否过期,如果过期回调函数
+ *				tmr_settimer设置的计时器保存在timers链表中
+ *				计时器在每个任务调度周期时检查当前任务是否有过期计时器,而不是每个时钟滴答都会检查
  *===========================================================================*/
 PUBLIC void tmr_settimer(tp, task, exp_time, fp)
 timer_t *tp;
@@ -193,7 +196,7 @@ tmr_func_t fp;
    */
   timer_t **atp;
 
-  if (tp->tmr_exp_time != TMR_NEVER) tmr_clrtimer(tp);
+  if (tp->tmr_exp_time != TMR_NEVER) tmr_clrtimer(tp);//保证相同的timer唯一
   tp->tmr_task = task;
   tp->tmr_exp_time = exp_time;
   tp->tmr_func = fp;
@@ -314,6 +317,10 @@ message *m_ptr;			/* pointer to request message */
 
 /*===========================================================================*
  *				do_setalarm				     *
+ *				每个任务只能设置一个闹钟,闹钟的timer保存在tmr_alarm数组中
+ *				设置新的闹钟会覆盖久的闹钟，设置闹钟时将tmr_alarm中对应任务的计时器
+ *				加入到timers链表,闹钟的触发除了被clock_task触发外，还会被syn_alrm_task
+ *				触发
  *===========================================================================*/
 PRIVATE void do_setalarm(m_ptr, handler, function)
 message *m_ptr;			/* pointer to request message */
@@ -366,6 +373,7 @@ timer_t *tp;
 
 /*===========================================================================*
  *				cause_synalarm				     *
+ *				功能等同于syn_alrm_task,cause_synalarm
  *===========================================================================*/
 PRIVATE void cause_synalarm(tp)
 timer_t *tp;

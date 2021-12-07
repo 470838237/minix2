@@ -82,7 +82,7 @@ struct driver *dp;	/* Device dependent entry points. */
 
 	/* Wait for a request to read or write a disk block. */
 	receive(ANY, &mess);
-
+    //klib386.s _cp_mess
 	caller = mess.m_source;
 	proc_nr = mess.PROC_NR;
 
