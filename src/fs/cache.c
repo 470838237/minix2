@@ -94,7 +94,7 @@ int only_search;		/* if NO_READ, don't read, else act normal */
   if (bp->b_dev != NO_DEV) {
 	if (bp->b_dirt == DIRTY) flushall(bp->b_dev);
 #if ENABLE_CACHE2
-	put_block2(bp);
+	put_block2(bp);//将缓存1淘汰的块缓存到缓存2
 #endif
   }
 
@@ -114,7 +114,7 @@ int only_search;		/* if NO_READ, don't read, else act normal */
 #endif
 	if (only_search == PREFETCH) bp->b_dev = NO_DEV;
 	else
-	if (only_search == NORMAL) rw_block(bp, READING);
+	if (only_search == NORMAL) rw_block(bp, READING); //从磁盘读取到缓存1
   }
   return(bp);			/* return the newly acquired block */
 }

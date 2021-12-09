@@ -14,6 +14,7 @@
 #include "fs.h"
 #include <fcntl.h>
 #include <minix/com.h>
+#include <minix/const.h>
 #include "buf.h"
 #include "file.h"
 #include "fproc.h"

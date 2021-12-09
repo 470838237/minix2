@@ -146,7 +146,7 @@ PRIVATE void fs_init()
 	fp = &fproc[i];
 	rip = get_inode(root_dev, ROOT_INODE);
 	fp->fp_rootdir = rip;
-	dup_inode(rip);
+	dup_inode(rip);//使其他进程总是引用root节点
 	fp->fp_workdir = rip;
 	fp->fp_realuid = (uid_t) SYS_UID;
 	fp->fp_effuid = (uid_t) SYS_UID;
@@ -265,7 +265,7 @@ PRIVATE void load_ram()
 	 * no further than the last zone bit map block allows.
 	 */
 	if (ram_size < lcount) ram_size = lcount;
-	fsmax = (u32_t) sp->s_zmap_blocks * CHAR_BIT * BLOCK_SIZE;
+	fsmax = (u32_t) sp->s_zmap_blocks * CHAR_BIT * BLOCK_SIZE;//s_zmap_blocks only include data blocks
 	fsmax = (fsmax + (sp->s_firstdatazone-1)) << sp->s_log_zone_size;
 	if (ram_size > fsmax) ram_size = fsmax;
   }
@@ -354,7 +354,7 @@ dev_t super_dev;			/* place to get superblock from */
   if (bad) panic("Invalid root file system", NO_NUM);
 
   sp->s_imount = rip;
-  dup_inode(rip);
+  dup_inode(rip);//使得root节点总是不被释放
   sp->s_isup = rip;
   sp->s_rd_only = 0;
   return;
