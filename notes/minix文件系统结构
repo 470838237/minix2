@@ -225,3 +225,28 @@ s_ioob = (t_ifile-1)%s_ipb
 
 
 
+文件系统挂载:
+假设当前设备/dev/sda1,设备号1,文件系统用户目录为/usr,usr节点号为10
+主机其他未挂载设备挂/dev/sdb1,设备号5,文件系统根节点号1
+此时将/dev/sdb1挂载至/dev/sda1文件系统,挂在到/usr目录下,/usr为挂载点
+inode(1,10)为挂载点/usr在内存中和磁盘中的节点
+inode(5,1)为被挂载文件系统/dev/sdb1根节点
+super_block(1)为设备1的超级块在内存中数据,super_block(5)为设备5的超级块在内存中数据
+此时super_block(5)中s_imount指向inode(1,10),s_isup指向inode(5,1)
+
+当前路径为根路径/时,执行cd usr时的执行流程如下:
+1 搜索/目录文件名为usr的节点即inode(1,10)
+2 判断当前节点是否是其他设备的挂载点即inode.i_mount == I_MOUNT为true表示该节点是挂载点
+3 搜索全局super_block匹配super_block.s_imount==inode(1,10)，匹配成功则找到被挂载设备超级块
+4 通过被挂载设备超级块找到根节点，返回根节点，此时挂载点节点切换成功
+
+当前路径为根路径/usr时,执行cd ..
+1 /usr对应节点为inode(5,1),搜索该节点下文件名为..的节点，因为搜索路径为/usr/..由此可知当前节点为被挂载谁被根节点，此时需要切换至挂载点节点
+2 搜索全局super_block匹配super_block.s_dev
+3 匹配到super_block即可获得s_imount即inode(1,10)
+4 通过inode(1,10)搜索文件名..即/
+
+
+
+
+
