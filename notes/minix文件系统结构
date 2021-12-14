@@ -247,6 +247,11 @@ super_block(1)为设备1的超级块在内存中数据,super_block(5)为设备5�
 4 通过inode(1,10)搜索文件名..即/
 
 
+ block special file 和 character special file对应inode的imode设备类型会被置位为I_BLOCK_SPECIAL和I_CHACRACTER_SPECIAL
+ inode的dev属性为文件所属文件系统所在的设备号,inode的zone数组存储文件的内容,普通文件即REGULAR类型文件是存储在磁盘上的普通文件
+ 因此zone记录了文件在磁盘上的分布位置,对于lock special file 和 character special file而言,他们的文件内容并不存储在磁盘上
+ 而是存储在设备文件对应的存储区域,因此需要根据设备的设备号对文件进行读写操作,因此将块设备文件的设备号存储在zone[0]位置用于定位
+ 设备文件从而实现文件的读写
 
 
 
