@@ -311,3 +311,6 @@ request为F_SETLKW时将当前操作进程挂起等待其他进程释放锁
 若锁lock3范围为[lock3_start,lock3_end]
 如果release_end<lock3_end且如果release_start>lock3_start时此时将产生两段文件锁，因此先判单是否有空的文件锁可以使用存在时释放锁[lock3_start,lock3_end]
 并变更之前锁范围为[lock3_start,release_start],产生新锁范围为[release_end,lock3_end]
+释放锁时锁范围内存在其他锁则尝试唤醒其他等待该锁释放而挂起的进程
+
+当进程从新调用open打开文件时会释放掉当前进程持有该文件的锁并尝试唤醒其他因等待该进程释放锁的进程
