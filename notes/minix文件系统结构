@@ -247,11 +247,67 @@ super_block(1)为设备1的超级块在内存中数据,super_block(5)为设备5�
 4 通过inode(1,10)搜索文件名..即/
 
 
- block special file 和 character special file对应inode的imode设备类型会被置位为I_BLOCK_SPECIAL和I_CHACRACTER_SPECIAL
- inode的dev属性为文件所属文件系统所在的设备号,inode的zone数组存储文件的内容,普通文件即REGULAR类型文件是存储在磁盘上的普通文件
- 因此zone记录了文件在磁盘上的分布位置,对于lock special file 和 character special file而言,他们的文件内容并不存储在磁盘上
- 而是存储在设备文件对应的存储区域,因此需要根据设备的设备号对文件进行读写操作,因此将块设备文件的设备号存储在zone[0]位置用于定位
- 设备文件从而实现文件的读写
+block special file 和 character special file对应inode的imode设备类型会被置位为I_BLOCK_SPECIAL和I_CHACRACTER_SPECIAL
+inode的dev属性为文件所属文件系统所在的设备号,inode的zone数组存储文件的内容,普通文件即REGULAR类型文件是存储在磁盘上的普通文件
+因此zone记录了文件在磁盘上的分布位置,对于lock special file 和 character special file而言,他们的文件内容并不存储在磁盘上
+而是存储在设备文件对应的存储区域,因此需要根据设备的设备号对文件进行读写操作,因此将块设备文件的设备号存储在zone[0]位置用于定位
+设备文件从而实现文件的读写
+
+
+消息传递管道pipe: pipe(int fds[])
+消息传递功能实现方式:
+传递参数fd[0]表示从管道读取内容,fd[1]表示向管道写入内容,因为管道用于进程间消息传递,因此fd[0]和fd[1]为不同进程的文件描述符,通常在fork函数创建pipe
+因此fd[0]和fd[1]为不同进程的文件描述符,文件描述符号指向不同的filp,但不同的filp的filp_ino指针指向相同inode节点,因此一个进程持有fd[1]文件描述符
+向管道内写入内容也即写入共享的管道文件中,另一个进程持有fd[0]读取内容也即从共享管道文件读取内容。fd[0]指向的filp属性filp_mode为R_BIT,fd[1]指向
+的filp属性filp_mode为W_BIT.
+通过上述功能即可实现不同进程消息传递，但是管道消息传递还有以下特征:
+1 管道是两个进程通信，但进程可能会在通信期间被结束的。当进程其中一个进程结束时会有如下表现
+    1) 读取进程从管道中读取时,写进程不存在,读取操作立即返回
+    2) 写进程向管道写入内容时,读取进程不存在,理解发送内核SIGPIPE信号
+2 读写操作时读写进程都存在情况下根据管道文件读写操作发生阻塞
+    1) 读取进程读取管道内容时发现管道文件为空,阻塞读取进程,并执行唤醒写进程操作
+    2) 写入进程向管道写入内容时,如果要写入的内容超过管道文件限定大小,则写入大小为can_write = LIMIT_PIPE-position
+       如果can_write大于0表示管道文件未满还可以继续向管道写入can_write大小,则执行唤醒读取进程操作,然后执行管道写入内容操作,写入完成后管道已满，此时阻塞写入进程
+    3) can_write为0时表面管道文件已经满了不能继续向管道写入，此时阻塞写入进程
+
+int fd2 = dup(fd):
+为fd执行的文件分配新的描述符fd2,执行此操作后使用fd2和fd都是操作相同的文件
+dup2(fd,fd2)
+close文件描述符fd2执行的文件,并将fd2指向fd的文件,执行此操作后使用fd2和fd都是操作相同的文件
 
 
 
+fproc.fp_cloexec:
+fp_cloexec用于记录进程执行exec系统调用时需要关键的文件描述符。例如fp_cloexec第n位bit为1表示进程执行exec系统调用时关闭描述符为n的文件
+第n位bit为0则不做处理
+fcntl(fd, F_SETFD, 1);用于设置fd文件描述符对应fp_cloexec的bit位,为1时设置bit位,0表示清除该位
+fcntl(fd, F_GETFD);获取fd文件描述符对应fp_cloexec的bit位值
+
+fproc.filp_flags
+用于记录O_NONBLOCK | O_APPEND | O_ACCMODE标志位
+fcntl(ip_fd, F_SETFL, flags | O_NONBLOCK)
+设置进程filp_flags标志位,只有设置O_NONBLOCK | O_APPEND标志位有效
+fcntl(0,F_GETFL)获取filp_flags的O_NONBLOCK | O_APPEND | O_ACCMODE标志位
+
+
+fcntl(fd,request,&flock)
+flock.l_type:F_RDLCK,F_WRLCK,F_UNLCK
+request:F_GETLK,F_SETLK,F_SETLKW
+当request为F_GETLK时l_type不能为F_UNLCK
+当flock指定fd文件范围内没有锁则设置flock的l_type为F_UNLCK
+若flock指定fd文件范围内包含了其他锁的全部或者一部分时复制该锁属性至flock并返回,如果范围内存在多个锁也只返回找到的第一个锁
+
+当request为F_SETLK,F_SETLKW时fd对应的文件读写属性必须包含l_type,如l_type为F_RDLCK时,fd必须设置了R_BIT或RW_BIT
+当l_type为F_RDLCK,F_WRLCK时如果flock指定fd文件范围内包含了其他锁的全部或者一部分时发生冲突,此时request为F_SETLK直接返回错误
+request为F_SETLKW时将当前操作进程挂起等待其他进程释放锁
+如果flock指定fd文件范围内不包含其他锁且存在未使用锁槽时,将flock属性复制到空锁中对问价加锁
+如果l_type未F_UNLCK时即释放flock范围内的锁,若范围内不存在其他锁则什么也不做。如果范围内存在其他锁则做如下判断:
+设flock范围为[release_start,release_end],若锁lock1范围为[lock1_start,lock1_end]
+如果release_start<lock1_start,lock1_start<release_end<lock1_end时，释放[lock1_start,release_end]范围
+之前的锁范围变更为[release_end,lock1_end]
+若锁lock2范围为[lock2_start,lock2_end]
+如果release_end>lock2_end,lock2_start<release_start<lock2_end时释放[release_start,lock2_end]范围
+之前的锁范围变更为[lock2_start,release_start]
+若锁lock3范围为[lock3_start,lock3_end]
+如果release_end<lock3_end且如果release_start>lock3_start时此时将产生两段文件锁，因此先判单是否有空的文件锁可以使用存在时释放锁[lock3_start,lock3_end]
+并变更之前锁范围为[lock3_start,release_start],产生新锁范围为[release_end,lock3_end]

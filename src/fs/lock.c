@@ -73,7 +73,7 @@ int req;			/* either F_SETLK or F_SETLKW */
 	if (flp->lock_inode != f->filp_ino) continue;	/* different file */
 	if (last < flp->lock_first) continue;	/* new one is in front */
 	if (first > flp->lock_last) continue;	/* new one is afterwards */
-	if (ltype == F_RDLCK && flp->lock_type == F_RDLCK) continue;
+	if (ltype == F_RDLCK && flp->lock_type == F_RDLCK) continue;//都是读锁不会引发冲突
 	if (ltype != F_UNLCK && flp->lock_pid == fp->fp_pid) continue;
   
 	/* There might be a conflict.  Process it. */
