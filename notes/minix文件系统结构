@@ -320,3 +320,62 @@ request为F_SETLKW时将当前操作进程挂起等待其他进程释放锁
 
 当flock不为F_UNLCK,且存在一个锁范围和flock冲突,该所进程和当前操作进程相同,如果执行获取锁时flock将被设置为F_UNLCK即flock指定范围内没有其他锁
 如果执行的时设置锁操作则将创建新的文件锁而不是返回失败或挂起操作
+
+link(name1, name2)
+将创建name1的软连接name2,name1对应的连接数+1
+如果name1为文件夹时当前进程使用超级用户权限才能创建文件夹软连接
+如果name2存在时不能创建软链接
+创建软连接时创建name2文件的目录项,此时并不为name2创建新的inode节点，而是将name1的inode节点号赋值给name2目录项的d_ino属性
+
+unlink(name)
+移除name对应inode的软链接,也即移除inode的当前目录项
+如果name是一个文件夹,则当前进程需要拥有超级用户权限
+移除目录项时将name对应的inode节点i_nlinks减1,当同步或回写该inode至磁盘时检测到i_nlinks为0时会删除inode以及inode对应的文件空间和位图
+
+rmdir(name)
+  /* A directory file has to be removed. Five conditions have to met:
+   * 	- The file must be a directory
+   *	- The directory must be empty (except for . and ..)
+   *	- The final component of the path must not be . or ..
+   *	- The directory must not be the root of a mounted file system
+   *	- The directory must not be anybody's root/working directory
+   */
+
+rename(name1, name2)
+(1) 如果oldname为一个文件而不是目录，那么为该文件更名。在这种情况下，如果newname作为一个目录已存在，则它不能重命名一个目录。如果newname已存在，而且不是一个目录，
+则先将其删除然后将oldname更名为newname。对oldname所在目录以及newname所在的目录，调用进程必须具有写许可权，因为将更改这两个目录。
+(2) 如若oldname为一个目录，那么为该目录更名。如果newname已存在，则它必须是一个目录，而且该目录应当是空目录（空目录指的是该目录中只有. 和.. 项）。
+如果newname存在（而且是一个空目录），则先将其删除，然后将oldname更名为newname。另外，当为一个目录更名时，newname不能包含oldname作为其路径前缀。
+例如，不能将/usr更名为/usr/foo/testdir，因为老名字（ /usr/foo）是新名字的路径前缀，因而不能将其删除。
+(3) 作为一个特例，如果oldname和newname引用同一文件，则函数不做任何更改而成功返回。
+
+time(tp)
+获取自1970.1.1起始系统时间单位秒
+stime(tp)
+设置系统时间tp开机时间单位秒
+
+times(buffer)
+获取USER_TIME,SYSTEM_TIME,CHILD_UTIME,CHILD_STIME,BOOT_TICKS
+
+utime(name, timep)
+设置文件name访问时间和修改时间,如果timep为空则设置文件访问和修改时间为当前系统时间,否则设置为timep的修改和访问时间
+
+chdir(name)
+切换用户的工作目录至name
+
+chroot(name)
+改变用户的根目录至name只有su权限可调用
+
+stat(name, buffer)
+只能用于普通文件的信息查询,管道文件是临时文件因此不能通过文件名查询
+
+fstat(fd, buf)
+可用于查询所有文件的信息包含管道文件
+
+open(name, flags,...)
+当flags包含O_CREAT位时表明调用了创建新文件系统调用需要传递可变参数mode指明创建文件的访问权限
+当flags不包含O_CREAT时表面调用了打开已存在文件的系统调用,打开文件的访问权限为flags,因此不需要可变参数mode
+flags指定O_CREAT| O_EXCL：如果存在指定文件，返回出错：errno == EEXIST；
+
+creat(name, mode)
+创建文件名为name访问权限为mode的新文件等同于open(name, flags,...)flags包含O_CREAT时
