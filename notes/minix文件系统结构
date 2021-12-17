@@ -422,7 +422,7 @@ ioctl(ls_fd, request, argx)
                                                                                  |
                                                   call and block                 | awake
                call and block               dispatcher according dev-num        \|/
-user-io-request--------------->fs-task----------------------------------->  dev-task(1 call dev-driver. 2 request-device-io. 3 block dev-task.)
+user-io-request--------------->fs-task----------------------------------->  dev-task(1 call dev-driver. 2 request device-io. 3 block dev-task.)
       /|\                      |   /|\                                           |
       |                        |    |                                            |
       |------------------------|    |--------------------------------------------|
@@ -444,20 +444,42 @@ minix文件系统建立:
 11 将挂载文件系统的根节点和被挂载的系统的目录inode设置到mount-dev的超级块中
 12 读写文件时搜寻到被挂载目录将自动切换挂载系统更目录然后继续搜寻文件
 
+minix文件系统的缓存系统结构和接口调用层次:
+
+                                                                                 fs-call
+                                                                                    |
+                            |-------------------------------------------------------|
+                            |                                                       |
+                         pack-api                                                   |
+                            |                                                       |
+                            |                                                       |
+                            |                                                       |
+                           \|/                                                     \|/
+    |-----------------------------------------|-------------------------------------------|-----------------------------------------------|--------------------------------|
+    |                                         |                                           |                                               |                                |
+   \|/                                       \|/                                         \|/                                             \|/                              \|/
+super-base-op:                         zone-base-op:                                 inode-base-op:                                  bit-base-op:                    block-base-op:
+                                         alloc_zone                                    get_node                                      alloc_bit
+                                         free_zone                                     put_inode                                     free_bit
+                                         clear_zone                                    rw_inode
+                                                                                      alloc_inode
+                                                                                      free_inode
+                                                                                      wipe_inode
 
 
 
+                                                                                 inode-cache
+
+
+                                               block-cache(cache)
 
 
 
+                                                 ram-cache(cache2)
 
 
 
-
-
-
-
-
+                                                  dev-block
 
 
 
