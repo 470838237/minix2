@@ -151,6 +151,11 @@ int flags;			/* mode bits and flags */
  
   int r;
   register struct fproc *rfp;
+  //当一个进程打开tty设备时,如果当前非领导进程或当前进程已经打开了ctty设备时,则当前dev flags被设置为O_NOCTTY
+  //非上述情况则搜索其他进程是否打开的tty设备号是否和dev相等,存在则flags被设置为O_NOCTTY
+  //1 非领导进程不能拥有ctty
+  //2 领导进程已拥有ctty时再次打开的tty不能为ctty
+  //3 其他进程已存在tty的设备号为dev,则该dev只能为tty不能为ctty
 
   /* Add O_NOCTTY to the flags if this process is not a session leader, or
    * if it already has a controlling tty, or if it is someone elses

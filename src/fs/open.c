@@ -147,7 +147,7 @@ PRIVATE int common_open(oflags, omode)
                     r = dev_open(dev, who, bits | (oflags & ~O_ACCMODE));
                     break;
 
-                case I_NAMED_PIPE:
+                case I_NAMED_PIPE://什么情况下I_NAMED_PIPE才会被用户设置呢？目前来看不太会执行到此(mknod系统调用会创建type为I_NAMED_PIPE的文件)
                     oflags |= O_APPEND;    /* force append mode */
                     fil_ptr->filp_flags = oflags;
                     r = pipe_open(rip, bits, oflags);
@@ -202,6 +202,7 @@ PRIVATE int common_open(oflags, omode)
 /*===========================================================================*
  *				new_node				     *
  *===========================================================================*/
+//申请分配imap,创建inode,将inode节点关联到目录
 PRIVATE struct inode *new_node(path, bits, z0)
         char *path;            /* pointer to path name */
         mode_t bits;            /* mode of the new inode */

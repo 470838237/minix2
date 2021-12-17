@@ -316,10 +316,14 @@ request为F_SETLKW时将当前操作进程挂起等待其他进程释放锁
 当进程从新调用open打开文件时会释放掉当前进程持有该文件的锁并尝试唤醒其他因等待该进程释放锁的进程
 
 当flock为F_RDLCK时,fd文件存在一个锁范围和flock冲突且该锁为F_RDLCK时,如果执行的时获取锁操作时flock将被设置为F_UNLCK即flock指定范围内没有其他锁
-如果执行的时设置锁操作则将创建新的文件锁而不是返回失败或挂起操作
+如果执行的时设置读锁操作则将创建新的文件读锁而不是返回失败或挂起操作
+如果获取读锁时，获取为读锁则返回F_UNLCK,获取写锁时返回写锁
+即读取文件不会被限制不会因此阻塞
 
 当flock不为F_UNLCK,且存在一个锁范围和flock冲突,该所进程和当前操作进程相同,如果执行获取锁时flock将被设置为F_UNLCK即flock指定范围内没有其他锁
-如果执行的时设置锁操作则将创建新的文件锁而不是返回失败或挂起操作
+如果执行的时设置读和写锁操作则将创建新的文件锁而不是返回失败或挂起操作
+获取读锁和写锁时返回F_UNLCK
+即文件锁不会被相同进程的锁给限制读写功能,但会被其他进程的文件锁限制
 
 link(name1, name2)
 将创建name1的软连接name2,name1对应的连接数+1
@@ -379,3 +383,47 @@ flags指定O_CREAT| O_EXCL：如果存在指定文件，返回出错：errno == 
 
 creat(name, mode)
 创建文件名为name访问权限为mode的新文件等同于open(name, flags,...)flags包含O_CREAT时
+每次open或creat都会分配新的文件描述符和filep
+
+mknod(name, mode, dev)
+dev为0的时候创建当前文件系统的空文件
+dev为设备号时创建dev设备文件系统对应路径的空文件
+也可以创建管道文件但必须拥有su权限
+
+mkdir(name, mode)
+创建空文件夹，文件夹需要包含.和..节点
+
+close(fd)
+关闭文件
+1 如果fd是或字符块设备文件且没有被挂载,并且filep引用数为1时则刷新缓存块和缓存节点,再使得fd相关的块失效,再关闭设备
+2 filep引用数为-1
+3 如果fd是管道文件描述符则唤醒因此而阻塞的进程,如果filep为0时在inode中记录filep的filp_pos
+4 fp_cloexec对应的文件描述符清0
+5 清除当前进程有关该文件的读写锁,然后唤醒被读写阻塞的进程
+
+lseek(ls_fd, offset, whence)
+设置fd的相对偏移
+三种偏移方式文件起始+offset，当前位置+offset,文件末尾+offset
+且fd时管道文件时报错
+filp_pos发生比那花时ISEEK标志被设置
+
+
+setsid()
+当进程是会话的领头进程时setsid()调用失败并返回（-1）。
+setsid()调用成功后，返回新的会话的ID，调用setsid函数的进程成为新的会话的领头进程，并与其父进程的会话组和进程组脱离。
+由于会话对控制终端的独占性，进程同时与控制终端脱离。
+
+ioctl(ls_fd, request, argx)
+其他扩展io操作,针对字符和块设备文件有效，针对普通文件报错
+
+
+阻塞式io调用
+                                                                      device-interrupt-coming
+                                                                                 |
+                                                  call and block                 | awake
+               call and block               dispatcher according dev-num        \|/
+user-io-request--------------->fs-task----------------------------------->  dev-task(1 call dev-driver. 2 request-device-io. 3 block dev-task.)
+      /|\                      |   /|\                                           |
+      |                        |    |                                            |
+      |------------------------|    |--------------------------------------------|
+          reply and wake                       reply and wake
