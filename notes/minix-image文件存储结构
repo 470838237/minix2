@@ -2,8 +2,9 @@ flag = image_header.a_flags
 
 
 flag&A_PAL==1    flag&A_SEP = 1
-
 |-----------------------|
+|      image_header     |
+|-----------------------|扇区对齐
 |                       |
 |     image_header      |
 |                       |   text段 = image_header+text
@@ -38,7 +39,8 @@ flag&A_PAL==0       flag&A_SEP = 1
 |-----------------------|
 
 flag&A_PAL = 1      flag&A_SEP = 0
-
+|-----------------------|
+|      image_header     |
 |-----------------------|
 |                       |
 |                       |

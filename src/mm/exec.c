@@ -101,7 +101,8 @@ PUBLIC int do_exec()
 					&tot_bytes, &sym_bytes, sc, &pc);
 	if (m != ESCRIPT || ++r > 1) break;
   } while ((name = patch_stack(fd, mbuf, &stk_bytes, name_buf)) != NULL);
-
+  //name==NULL为true表明文件不是脚本文件(由此可知execve传递的文件路径既可以为可执行文件路径，也可以为脚本文件路径)
+  //name==NULL为false表明当前文件时脚本文件，patch_stack解析脚本文件并返回shell路径
   if (m < 0) {
 	close(fd);		/* something wrong with header */
 	return(stk_bytes > ARG_MAX ? ENOMEM : ENOEXEC);
@@ -270,7 +271,7 @@ vir_bytes *pc;			/* program entry point (initial PC) */
   totc = (*tot_bytes + CLICK_SIZE - 1) >> CLICK_SHIFT;
   if (dc >= totc) return(ENOEXEC);	/* stack must be at least 1 click */
   dvir = (*ft == SEPARATE ? 0 : tc);
-  s_vir = dvir + (totc - sc);
+  s_vir = dvir + (totc - sc);  //用户程序启动时栈已经包含了sc大小的参数，因此判断启动时初始栈基址是否和数据末尾地址冲突
   m = size_ok(*ft, tc, dc, sc, dvir, s_vir);
   ct = hdr.a_hdrlen & BYTE;		/* header length */
   if (ct > A_MINHDR) lseek(fd, (off_t) ct, SEEK_SET); /* skip unused hdr */
@@ -419,6 +420,9 @@ vir_bytes base;			/* virtual address of stack base inside user */
 /*===========================================================================*
  *				insert_arg				     *
  *===========================================================================*/
+//replace为true时替换argv[0]字符串为arg，如果argv[0]的空间不足够存储arg，则将argv[0]以及以后的字符移动使得argv[0]长度刚好容纳arg
+//replace为false时在argv[0]之前插入arg字符串，因此需要移动argv[0]以及以后的字符使得长度可以容纳arg，再次基础上多移动sizeof(char*)字节
+//replace为false时完成移动后还需将参数个数+1，并将argv数组向后移动sizeof(char*),并将新插入的arg地址patch到新的argv[0]处
 PRIVATE int insert_arg(stack, stk_bytes, arg, replace)
 char stack[ARG_MAX];		/* pointer to stack image within MM */
 vir_bytes *stk_bytes;		/* size of initial stack */
@@ -437,7 +441,7 @@ int replace;
   /* Prepending arg adds at least one string and a zero byte. */
   offset = strlen(arg) + 1;
 
-  a0 = (int) ((char **) stack)[1];	/* argv[0] */
+  a0 = (int) ((char **) stack)[1];	/* argv[0] */ //arg数组此时存储的是相对于stack基址地址的相对地址，由此可知argv[0]未被赋值如果已经赋值也会在此处被执行程序路径覆盖
   if (a0 < 4 * PTRSIZE || a0 >= old_bytes) return(FALSE);
 
   a1 = a0;		/* a1 will point to the strings to be moved */
@@ -446,17 +450,17 @@ int replace;
 	do {
 		if (a1 == old_bytes) return(FALSE);
 		--offset;
-	} while (stack[a1++] != 0);
+	} while (stack[a1++] != 0);//计算argv[0]是否可以存放下路径，offset大于0表示程序路径大于argv[0]大小，需要移动offset用以复制路径
   } else {
-	offset += PTRSIZE;	/* new argv[0] needs new pointer in argv[] */
-	a0 += PTRSIZE;		/* location of new argv[0][]. */
+	offset += PTRSIZE;	/* new argv[0] needs new pointer in argv[] *///string移动
+	a0 += PTRSIZE;		/* location of new argv[0][]. *///将路径插入到string前面
   }
 
   /* stack will grow by offset bytes (or shrink by -offset bytes) */
   if ((*stk_bytes += offset) > ARG_MAX) return(FALSE);
 
   /* Reposition the strings by offset bytes */
-  memmove(stack + a1 + offset, stack + a1, old_bytes - a1);
+  memmove(stack + a1 + offset, stack + a1, old_bytes - a1);//此处移动string offset字节以存放路径
 
   strcpy(stack + a0, arg);	/* Put arg in the new space. */
 
@@ -464,7 +468,7 @@ int replace;
 	/* Make space for a new argv[0]. */
 	memmove(stack + 2 * PTRSIZE, stack + 1 * PTRSIZE, a0 - 2 * PTRSIZE);
 
-	((char **) stack)[0]++;	/* nargs++; */
+	((char **) stack)[0]++;	/* nargs++; *///参数个数+1
   }
   /* Now patch up argv[] and envp[] by offset. */
   patch_ptr(stack, (vir_bytes) offset);
