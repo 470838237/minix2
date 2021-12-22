@@ -103,6 +103,12 @@ PUBLIC int do_exec()
   } while ((name = patch_stack(fd, mbuf, &stk_bytes, name_buf)) != NULL);
   //name==NULL为true表明文件不是脚本文件(由此可知execve传递的文件路径既可以为可执行文件路径，也可以为脚本文件路径)
   //name==NULL为false表明当前文件时脚本文件，patch_stack解析脚本文件并返回shell路径
+  //如果exec_name是普通可执行文件则直接运行该文件
+  //如果exec_name是shell文件则读取文件shell程序路径并运行，shell程序运行时解析传入的文件路径名和参数，再根据传入的路径名读取脚本
+  //文本内容再解析文本语法实现批处理程序
+  //I_SET_UID_BIT和I_SET_GID_BIT用途
+
+
   if (m < 0) {
 	close(fd);		/* something wrong with header */
 	return(stk_bytes > ARG_MAX ? ENOMEM : ENOEXEC);
@@ -127,7 +133,7 @@ PUBLIC int do_exec()
   vsp = (vir_bytes) rmp->mp_seg[S].mem_vir << CLICK_SHIFT;
   vsp += (vir_bytes) rmp->mp_seg[S].mem_len << CLICK_SHIFT;
   vsp -= stk_bytes;
-  patch_ptr(mbuf, vsp);
+  patch_ptr(mbuf, vsp);//将数组元素相对mbuf起始地址的值转换为绝对地址
   src = (vir_bytes) mbuf;
   r = sys_copy(MM_PROC_NR, D, (phys_bytes) src,
   			who, D, (phys_bytes) vsp, (phys_bytes)stk_bytes);

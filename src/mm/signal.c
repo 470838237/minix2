@@ -295,7 +295,7 @@ int sec;			/* how many seconds delay before the signal */
   m_sig.m_type = SET_ALARM;
   m_sig.CLOCK_PROC_NR = proc_nr;
   m_sig.DELTA_TICKS = (clock_t) (HZ * (unsigned long) (unsigned) sec);
-  if ( (unsigned long) m_sig.DELTA_TICKS / HZ != (unsigned) sec)
+  if ( (unsigned long) m_sig.DELTA_TICKS / HZ != (unsigned) sec)//溢出检查?
 	m_sig.DELTA_TICKS = LONG_MAX;	/* eternity (really CLOCK_T_MAX) */
   if (sendrec(CLOCK, &m_sig) != OK) panic("alarm er", NO_NUM);
   remaining = (int) m_sig.SECONDS_LEFT;
