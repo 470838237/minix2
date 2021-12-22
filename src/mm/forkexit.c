@@ -174,6 +174,7 @@ int exit_status;		/* the process' exit status (for parent) */
   if (parent_waiting && right_child) {
 	cleanup(rmp);			/* tell parent and release child slot */
   } else {
+      //父进程未等待子进程结束则将子进程标记为僵尸进程
 	rmp->mp_flags = IN_USE|ZOMBIE;	/* parent not waiting, zombify child */
 	sig_proc(p_mp, SIGCHLD);	/* send parent a "child died" signal */
   }
@@ -182,6 +183,8 @@ int exit_status;		/* the process' exit status (for parent) */
   for (rmp = &mproc[0]; rmp < &mproc[NR_PROCS]; rmp++) {
 	if (rmp->mp_flags & IN_USE && rmp->mp_parent == proc_nr) {
 		/* 'rmp' now points to a child to be disinherited. */
+		//将退出的进程的子进程的父进程设置为Init进程
+		//如果父进程等待子进程且子进程是僵尸进程则清理僵尸进程
 		rmp->mp_parent = INIT_PROC_NR;
 		parent_waiting = mproc[INIT_PROC_NR].mp_flags & WAITING;
 		if (parent_waiting && (rmp->mp_flags & ZOMBIE)) cleanup(rmp);

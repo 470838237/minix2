@@ -394,6 +394,7 @@ message *m_ptr;			/* pointer to request message */
    */
   if (rc->p_flags & SENDING) {
 	/* Check all proc slots to see if the exiting process is queued. */
+	//遍历所有进程查找被杀进程发送的消息，查找到直接从待处理消息队列中移除，该情况发送于信号杀死阻塞进程。
 	for (rp = BEG_PROC_ADDR; rp < END_PROC_ADDR; rp++) {
 		if (rp->p_callerq == NIL_PROC) continue;
 		if (rp->p_callerq == rc) {
