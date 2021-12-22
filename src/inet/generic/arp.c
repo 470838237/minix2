@@ -4,7 +4,7 @@ arp.c
 Copyright 1995 Philip Homburg
 */
 
-#include "inet.h"
+#include "../inet.h"
 #include "type.h"
 
 #include "arp.h"

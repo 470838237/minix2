@@ -4,7 +4,7 @@ tcp_lib.c
 Copyright 1995 Philip Homburg
 */
 
-#include "inet.h"
+#include "../inet.h"
 #include "buf.h"
 #include "clock.h"
 #include "event.h"

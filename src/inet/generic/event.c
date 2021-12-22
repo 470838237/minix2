@@ -8,7 +8,7 @@ Implementation of an event queue.
 Copyright 1995 Philip Homburg
 */
 
-#include "inet.h"
+#include "../inet.h"
 #include "assert.h"
 #include "event.h"
 

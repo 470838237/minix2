@@ -8,7 +8,7 @@ Created:	Apr 23, 1993 by Philip Homburg
 Copyright 1995 Philip Homburg
 */
 
-#include "inet.h"
+#include "../inet.h"
 #include "assert.h"
 #include "type.h"
 #include "buf.h"

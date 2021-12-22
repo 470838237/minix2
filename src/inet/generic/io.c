@@ -6,7 +6,7 @@ Copyright 1995 Philip Homburg
 
 #include <stdlib.h>
 
-#include "inet.h"
+#include "../inet.h"
 #include "io.h"
 
 PUBLIC void writeIpAddr(addr)

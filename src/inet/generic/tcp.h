@@ -3,10 +3,8 @@ tcp.h
 
 Copyright 1995 Philip Homburg
 */
-
 #ifndef TCP_H
 #define TCP_H
-
 #define ISS_INC_FREQ	250000L
 #define TCP_MAX_DATAGRAM	8192
 
@@ -60,7 +58,6 @@ Copyright 1995 Philip Homburg
 #define TCP_DEF_OPT		(NWTO_NOFLAG)
 
 struct acc;
-
 void tcp_prep ARGS(( void ));
 void tcp_init ARGS(( void ));
 int tcp_open ARGS(( int port, int srfd,

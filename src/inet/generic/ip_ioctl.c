@@ -4,7 +4,7 @@ ip_ioctl.c
 Copyright 1995 Philip Homburg
 */
 
-#include "inet.h"
+#include "../inet.h"
 #include "buf.h"
 #include "event.h"
 #include "type.h"
