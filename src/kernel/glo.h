@@ -21,7 +21,8 @@ EXTERN struct proc *proc_ptr;	/* pointer to currently running process */
 
 /* Signals. */
 EXTERN int sig_procs;		/* number of procs with p_pending != 0 */
-
+//计数当前多少进程有信号。当flag有标志PENDING时
+//
 /* Memory sizes. */
 EXTERN struct memory mem[NR_MEMS];	/* base and size of chunks of memory */
 EXTERN phys_clicks tot_mem_size;	/* total system memory size */

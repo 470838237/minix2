@@ -620,6 +620,9 @@ register message *m_ptr;	/* pointer to request message */
  * is how the FS (and possibly other servers) get access to cause_sig to
  * send a KSIG message to MM
  */
+//kernel task 和 fs task(SIG_PIPE)调用 sys task 触发信号
+//
+
 
   assert(isuserp(proc_addr(m_ptr->PR)));
   cause_sig(m_ptr->PR, m_ptr->SIGNUM);
@@ -818,7 +821,7 @@ register message *m_ptr;
 	rp->p_reg.psw &= ~TRACEBIT;	/* clear trace bit */
 	return(OK);
 
-  case T_GETINS:		/* return value from instruction space */
+  case T_GETINS:		/* return value from instruction space */ //获取文本段数据
 	if (rp->p_map[T].mem_len != 0) {
 		if ((src = umap(rp, T, TR_ADDR, TR_VLSIZE)) == 0) return(EIO);
 		phys_copy(src, vir2phys(&TR_DATA), (phys_bytes) sizeof(long));
@@ -826,7 +829,7 @@ register message *m_ptr;
 	}
 	/* Text space is actually data space - fall through. */
 
-  case T_GETDATA:		/* return value from data space */
+  case T_GETDATA:		/* return value from data space *///获取数据段数据
 	if ((src = umap(rp, D, TR_ADDR, TR_VLSIZE)) == 0) return(EIO);
 	phys_copy(src, vir2phys(&TR_DATA), (phys_bytes) sizeof(long));
 	break;
@@ -834,11 +837,12 @@ register message *m_ptr;
   case T_GETUSER:		/* return value from process table */
 	if ((TR_ADDR & (sizeof(long) - 1)) != 0 ||
 	    TR_ADDR > sizeof(struct proc) - sizeof(long))
+	    //未4字节对齐或超过大小返回错误
 		return(EIO);
-	TR_DATA = *(long *) ((char *) rp + (int) TR_ADDR);
+	TR_DATA = *(long *) ((char *) rp + (int) TR_ADDR);//返回进程表数据
 	break;
 
-  case T_SETINS:		/* set value in instruction space */
+  case T_SETINS:		/* set value in instruction space *///设置文本段数据
 	if (rp->p_map[T].mem_len != 0) {
 		if ((dst = umap(rp, T, TR_ADDR, TR_VLSIZE)) == 0) return(EIO);
 		phys_copy(vir2phys(&TR_DATA), dst, (phys_bytes) sizeof(long));
@@ -847,15 +851,16 @@ register message *m_ptr;
 	}
 	/* Text space is actually data space - fall through. */
 
-  case T_SETDATA:			/* set value in data space */
+  case T_SETDATA:			/* set value in data space *///设置数据段数据
 	if ((dst = umap(rp, D, TR_ADDR, TR_VLSIZE)) == 0) return(EIO);
 	phys_copy(vir2phys(&TR_DATA), dst, (phys_bytes) sizeof(long));
 	TR_DATA = 0;
 	break;
 
-  case T_SETUSER:			/* set value in process table */
+  case T_SETUSER:			/* set value in process table *///设置数据
 	if ((TR_ADDR & (sizeof(reg_t) - 1)) != 0 ||
 	     TR_ADDR > sizeof(struct stackframe_s) - sizeof(reg_t))
+	    //限制设置范围为stackframe_s
 		return(EIO);
 	i = (int) TR_ADDR;
 #if (CHIP == INTEL)
@@ -871,12 +876,15 @@ register message *m_ptr;
 	    i == (int) &((struct proc *) 0)->p_reg.fs ||
 #endif
 	    i == (int) &((struct proc *) 0)->p_reg.ss)
+	    //禁止设置上述数据
 		return(EIO);
 #endif
 	if (i == (int) &((struct proc *) 0)->p_reg.psw)
 		/* only selected bits are changeable */
+	    //设置状态字，但只允许部分位被设置，其他的位被忽略
 		SETPSW(rp, TR_DATA);
 	else
+	    //设置其他
 		*(reg_t *) ((char *) &rp->p_reg + i) = (reg_t) TR_DATA;
 	TR_DATA = 0;
 	break;
@@ -888,7 +896,7 @@ register message *m_ptr;
 	break;
 
   case T_STEP:			/* set trace bit */
-	rp->p_reg.psw |= TRACEBIT;
+	rp->p_reg.psw |= TRACEBIT;//状态字设置TRACEBIT位，并唤醒进程。推断TRACEBIT位被设置后处理器只会运行一条指令后然后停止运行
 	rp->p_flags &= ~P_STOP;
 	if (rp->p_flags == 0) lock_ready(rp);
 	TR_DATA = 0;
@@ -1039,7 +1047,7 @@ int sig_nr;			/* signal to be sent, 1 to _NSIG */
   register struct proc *rp, *mmp;
 
   rp = proc_addr(proc_nr);
-  if (sigismember(&rp->p_pending, sig_nr))
+  if (sigismember(&rp->p_pending, sig_nr))//阻塞队列已存在信号
 	return;			/* this signal already pending */
   sigaddset(&rp->p_pending, sig_nr);
   ++rp->p_pendcount;		/* count new signal pending */

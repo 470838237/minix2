@@ -37,6 +37,7 @@ struct proc {
   struct proc *p_nextheld;	/* next in chain of held-up int processes */
 
   int p_flags;			/* SENDING, RECEIVING, etc. */
+  //fork时或p_pendcount为0时清楚标志位SIG_PENDING
   struct mem_map p_map[NR_SEGS];/* memory map */
   pid_t p_pid;			/* process id passed in from MM */
   int p_priority;		/* task, server, or user process */
@@ -57,7 +58,9 @@ struct proc {
   struct proc *p_nextready;	/* pointer to next ready process */
   sigset_t p_pending;		/* bit map for pending signals */
   unsigned p_pendcount;		/* count of pending and unfinished signals */
-
+  //fork和exit操作时将p_pending和p_pendcount清0
+  //p_pending和p_pendcount同增同减,p_pendcount对p_pending被设置的信号位计数
+  //之所以需要单独增加p_pendcount计数而不是遍历p_pending。是为了减少计算量
   char p_name[16];		/* name of the process */
 };
 
@@ -71,7 +74,6 @@ struct proc {
 #define PENDING		0x08	/* set when inform() of signal pending */
 #define SIG_PENDING	0x10	/* keeps to-be-signalled proc from running */
 #define P_STOP		0x20	/* set when process is being traced */
-
 /* Values for p_priority */
 #define PPRI_NONE	0	/* Slot is not in use */
 #define PPRI_TASK	1	/* Part of the kernel */

@@ -577,9 +577,11 @@ PRIVATE void dump_core(rmp)
      * Maybe make SAFETY_BYTES a parameter.
      */
     sys_getsp(slot, &current_sp);
+    //更新栈数据段和栈
     adjust(rmp, rmp->mp_seg[D].mem_len, current_sp);
 
     /* Write the memory map of all segments to begin the core file. */
+    //写入mp_seg
     if (write(fd, (char *) rmp->mp_seg, (unsigned) sizeof rmp->mp_seg)
         != (unsigned) sizeof rmp->mp_seg) {
         close(fd);
@@ -589,6 +591,7 @@ PRIVATE void dump_core(rmp)
     /* Write out the whole kernel process table entry to get the regs. */
     trace_off = 0;
     while (sys_trace(3, slot, trace_off, &trace_data) == OK) {
+        //从数据段读取数据，每次读取sizeof long并写入文件
         if (write(fd, (char *) &trace_data, (unsigned) sizeof(long))
             != (unsigned) sizeof(long)) {
             close(fd);
@@ -599,6 +602,7 @@ PRIVATE void dump_core(rmp)
 
     /* Loop through segments and write the segments themselves out. */
     for (seg = 0; seg < NR_SEGS; seg++) {
+        //将数据段，堆栈段，文本段写入文件
         rw_seg(1, fd, slot, seg,
                (phys_bytes) rmp->mp_seg[seg].mem_len << CLICK_SHIFT);
     }

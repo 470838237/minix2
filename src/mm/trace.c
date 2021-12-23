@@ -41,7 +41,7 @@ PUBLIC int do_trace()
    * the process to be traced
    */
   if (request == T_OK) {/* enable tracing by parent for this process */
-	mp->mp_flags |= TRACED;
+	mp->mp_flags |= TRACED;//标记当前进程被调试，应该在被fork后设置
 	mp->mp_reply.m2_l2 = 0;
 	return(OK);
   }
