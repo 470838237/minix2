@@ -30,71 +30,69 @@
 #include "mproc.h"
 #include "param.h"
 
-#define CORE_MODE	0777	/* mode to use on core image files */
-#define DUMPED          0200	/* bit set in status when core dumped */
+#define CORE_MODE    0777    /* mode to use on core image files */
+#define DUMPED          0200    /* bit set in status when core dumped */
 
-FORWARD _PROTOTYPE( void dump_core, (struct mproc *rmp)			);
-FORWARD _PROTOTYPE( void unpause, (int pro)				);
+FORWARD _PROTOTYPE(void dump_core, (struct mproc *rmp));
+
+FORWARD _PROTOTYPE(void unpause, (int pro));
 
 
 /*===========================================================================*
  *			       do_sigaction				     *
  *===========================================================================*/
-PUBLIC int do_sigaction()
-{
-  int r;
-  struct sigaction svec;
-  struct sigaction *svp;
+PUBLIC int do_sigaction() {
+    int r;
+    struct sigaction svec;
+    struct sigaction *svp;
 
-  if (sig_nr == SIGKILL) return(OK);
-  if (sig_nr < 1 || sig_nr > _NSIG) return (EINVAL);
-  svp = &mp->mp_sigact[sig_nr];
-  if ((struct sigaction *) sig_osa != (struct sigaction *) NULL) {
-	r = sys_copy(MM_PROC_NR,D, (phys_bytes) svp,
-		who, D, (phys_bytes) sig_osa, (phys_bytes) sizeof(svec));
-	if (r != OK) return(r);
-  }
+    if (sig_nr == SIGKILL) return (OK);
+    if (sig_nr < 1 || sig_nr > _NSIG) return (EINVAL);
+    svp = &mp->mp_sigact[sig_nr];
+    if ((struct sigaction *) sig_osa != (struct sigaction *) NULL) {
+        r = sys_copy(MM_PROC_NR, D, (phys_bytes) svp,
+                     who, D, (phys_bytes) sig_osa, (phys_bytes) sizeof(svec));
+        if (r != OK) return (r);
+    }
 
-  if ((struct sigaction *) sig_nsa == (struct sigaction *) NULL) return(OK);
+    if ((struct sigaction *) sig_nsa == (struct sigaction *) NULL) return (OK);
 
-  /* Read in the sigaction structure. */
-  r = sys_copy(who, D, (phys_bytes) sig_nsa,
-		MM_PROC_NR, D, (phys_bytes) &svec, (phys_bytes) sizeof(svec));
-  if (r != OK) return(r);
+    /* Read in the sigaction structure. */
+    r = sys_copy(who, D, (phys_bytes) sig_nsa,
+                 MM_PROC_NR, D, (phys_bytes) &svec, (phys_bytes) sizeof(svec));
+    if (r != OK) return (r);
 
-  if (svec.sa_handler == SIG_IGN) {
-	sigaddset(&mp->mp_ignore, sig_nr);
-	sigdelset(&mp->mp_sigpending, sig_nr);
-	sigdelset(&mp->mp_catch, sig_nr);
-  } else {
-	sigdelset(&mp->mp_ignore, sig_nr);
-	if (svec.sa_handler == SIG_DFL)
-		sigdelset(&mp->mp_catch, sig_nr);
-	else
-		sigaddset(&mp->mp_catch, sig_nr);
-  }
-  mp->mp_sigact[sig_nr].sa_handler = svec.sa_handler;
-  sigdelset(&svec.sa_mask, SIGKILL);
-  mp->mp_sigact[sig_nr].sa_mask = svec.sa_mask;
-  mp->mp_sigact[sig_nr].sa_flags = svec.sa_flags;
-  mp->mp_sigreturn = (vir_bytes) sig_ret;
-  return(OK);
+    if (svec.sa_handler == SIG_IGN) {
+        sigaddset(&mp->mp_ignore, sig_nr);
+        sigdelset(&mp->mp_sigpending, sig_nr);
+        sigdelset(&mp->mp_catch, sig_nr);
+    } else {
+        sigdelset(&mp->mp_ignore, sig_nr);
+        if (svec.sa_handler == SIG_DFL)
+            sigdelset(&mp->mp_catch, sig_nr);
+        else
+            sigaddset(&mp->mp_catch, sig_nr);
+    }
+    mp->mp_sigact[sig_nr].sa_handler = svec.sa_handler;
+    sigdelset(&svec.sa_mask, SIGKILL);
+    mp->mp_sigact[sig_nr].sa_mask = svec.sa_mask;
+    mp->mp_sigact[sig_nr].sa_flags = svec.sa_flags;
+    mp->mp_sigreturn = (vir_bytes) sig_ret;
+    return (OK);
 }
 
 /*===========================================================================*
  *                            do_sigpending                                  *
  *===========================================================================*/
-PUBLIC int do_sigpending()
-{
-  mp->reply_mask = (long) mp->mp_sigpending;
-  return OK;
+PUBLIC int do_sigpending() {
+    mp->reply_mask = (long) mp->mp_sigpending;
+    return OK;
 }
 
 /*===========================================================================*
  *                            do_sigprocmask                                 *
  *===========================================================================*/
-PUBLIC int do_sigprocmask()
-{
+PUBLIC int do_sigprocmask() {
 /* Note that the library interface passes the actual mask in sigmask_set,
  * not a pointer to the mask, in order to save a sys_copy.  Similarly,
  * the old mask is placed in the return message which the library
@@ -104,92 +102,88 @@ PUBLIC int do_sigprocmask()
  * is NULL.
  */
 
-  int i;
+    int i;
 
-  mp->reply_mask = (long) mp->mp_sigmask;
+    mp->reply_mask = (long) mp->mp_sigmask;
 
-  switch (sig_how) {
-      case SIG_BLOCK:
-	sigdelset((sigset_t *)&sig_set, SIGKILL);
-	for (i = 1; i <= _NSIG; i++) {
-		if (sigismember((sigset_t *)&sig_set, i))
-			sigaddset(&mp->mp_sigmask, i);
-	}
-	break;
+    switch (sig_how) {
+        case SIG_BLOCK:
+            sigdelset((sigset_t *) &sig_set, SIGKILL);
+            for (i = 1; i <= _NSIG; i++) {
+                if (sigismember((sigset_t *) &sig_set, i))
+                    sigaddset(&mp->mp_sigmask, i);
+            }
+            break;
 
-      case SIG_UNBLOCK:
-	for (i = 1; i <= _NSIG; i++) {
-		if (sigismember((sigset_t *)&sig_set, i))
-			sigdelset(&mp->mp_sigmask, i);
-	}
-	check_pending(mp);
-	break;
+        case SIG_UNBLOCK:
+            for (i = 1; i <= _NSIG; i++) {
+                if (sigismember((sigset_t *) &sig_set, i))
+                    sigdelset(&mp->mp_sigmask, i);
+            }
+            check_pending(mp);
+            break;
 
-      case SIG_SETMASK:
-	sigdelset((sigset_t *)&sig_set, SIGKILL);
-	mp->mp_sigmask = (sigset_t)sig_set;
-	check_pending(mp);
-	break;
+        case SIG_SETMASK:
+            sigdelset((sigset_t *) &sig_set, SIGKILL);
+            mp->mp_sigmask = (sigset_t) sig_set;
+            check_pending(mp);
+            break;
 
-      case SIG_INQUIRE:
-	break;
+        case SIG_INQUIRE:
+            break;
 
-      default:
-	return(EINVAL);
-	break;
-  }
-  return OK;
+        default:
+            return (EINVAL);
+            break;
+    }
+    return OK;
 }
 
 /*===========================================================================*
  *                            do_sigsuspend                                  *
  *===========================================================================*/
-PUBLIC int do_sigsuspend()
-{
-  mp->mp_sigmask2 = mp->mp_sigmask;	/* save the old mask */
-  mp->mp_sigmask = (sigset_t) sig_set;
-  sigdelset(&mp->mp_sigmask, SIGKILL);
-  mp->mp_flags |= SIGSUSPENDED;
-  check_pending(mp);
-  return(SUSPEND);
+PUBLIC int do_sigsuspend() {
+    mp->mp_sigmask2 = mp->mp_sigmask;    /* save the old mask */
+    mp->mp_sigmask = (sigset_t) sig_set;
+    sigdelset(&mp->mp_sigmask, SIGKILL);
+    mp->mp_flags |= SIGSUSPENDED;
+    check_pending(mp);//检查是否有待处理信号
+    return (SUSPEND);
 }
 
 
 /*===========================================================================*
  *                               do_sigreturn				     *
  *===========================================================================*/
-PUBLIC int do_sigreturn()
-{
+PUBLIC int do_sigreturn() {
 /* A user signal handler is done.  Restore context and check for
  * pending unblocked signals.
  */
 
-  int r;
+    int r;
 
-  mp->mp_sigmask = (sigset_t) sig_set;
-  sigdelset(&mp->mp_sigmask, SIGKILL);
+    mp->mp_sigmask = (sigset_t) sig_set;//sigreturn posix接口传递的sig_set屏蔽了所有信号
+    sigdelset(&mp->mp_sigmask, SIGKILL);//使得进程可以响应SIGKILL
 
-  r = sys_sigreturn(who, (vir_bytes)sig_context, sig_flags);
-  check_pending(mp);
-  return(r);
+    r = sys_sigreturn(who, (vir_bytes) sig_context, sig_flags);
+    check_pending(mp);//每次系统调用完毕后都会重新调度程序，此时检查是否有待处理信号
+    return (r);
 }
 
 /*===========================================================================*
  *				do_kill					     *
  *===========================================================================*/
-PUBLIC int do_kill()
-{
+PUBLIC int do_kill() {
 /* Perform the kill(pid, signo) system call. */
 
-  return check_sig(pid, sig_nr);
+    return check_sig(pid, sig_nr);
 }
 
 
 /*===========================================================================*
  *				do_ksig					     *
  *===========================================================================*/
-PUBLIC int do_ksig()
-{
+PUBLIC int do_ksig() {
 /* Certain signals, such as segmentation violations and DEL, originate in the
  * kernel.  When the kernel detects such signals, it sets bits in a bit map.
  * As soon as MM is awaiting new work, the kernel sends MM a message containing
@@ -197,63 +191,64 @@ PUBLIC int do_ksig()
  * also uses this mechanism to signal writing on broken pipes (SIGPIPE).
  */
 
-  register struct mproc *rmp;
-  int i, proc_nr;
-  pid_t proc_id, id;
-  sigset_t sig_map;
+    register struct mproc *rmp;
+    int i, proc_nr;
+    pid_t proc_id, id;
+    sigset_t sig_map;
 
-  /* Only kernel may make this call. */
-  if (who != HARDWARE) return(EPERM);
-  proc_nr = mm_in.SIG_PROC;
-  rmp = &mproc[proc_nr];
-  if ((rmp->mp_flags & (IN_USE | ZOMBIE)) != IN_USE) return(SUSPEND);
-  proc_id = rmp->mp_pid;
-  sig_map = (sigset_t) mm_in.SIG_MAP;
-  mp = &mproc[0];		/* pretend kernel signals are from MM */
-  mp->mp_procgrp = rmp->mp_procgrp;	/* get process group right */
+    /* Only kernel may make this call. */
+    if (who != HARDWARE) return (EPERM);
+    proc_nr = mm_in.SIG_PROC;
+    rmp = &mproc[proc_nr];
+    if ((rmp->mp_flags & (IN_USE | ZOMBIE)) != IN_USE) return (SUSPEND);
+    proc_id = rmp->mp_pid;
+    sig_map = (sigset_t) mm_in.SIG_MAP;
+    mp = &mproc[0];        /* pretend kernel signals are from MM */
+    mp->mp_procgrp = rmp->mp_procgrp;    /* get process group right */
 
-  /* Check each bit in turn to see if a signal is to be sent.  Unlike
-   * kill(), the kernel may collect several unrelated signals for a
-   * process and pass them to MM in one blow.  Thus loop on the bit
-   * map. For SIGINT and SIGQUIT, use proc_id 0 to indicate a broadcast
-   * to the recipient's process group.  For SIGKILL, use proc_id -1 to
-   * indicate a systemwide broadcast.
-   */
-  for (i = 1; i <= _NSIG; i++) {
-	if (!sigismember(&sig_map, i)) continue;
-	switch (i) {
-	    case SIGINT:
-	    case SIGQUIT:
-		id = 0; break;	/* broadcast to process group */
-	    case SIGKILL:
-		id = -1; break;	/* broadcast to all except INIT */
-	    case SIGALRM:
-		/* Disregard SIGALRM when the target process has not
-		 * requested an alarm.  This only applies for a KERNEL
-		 * generated signal.
-		 */
-		if ((rmp->mp_flags & ALARM_ON) == 0) continue;
-		rmp->mp_flags &= ~ALARM_ON;
-		/* fall through */
-	    default:
-		id = proc_id;
-		break;
-	}
-	check_sig(id, i);
-	sys_endsig(proc_nr);	/* tell kernel it's done */
-  }
-  return(SUSPEND);
+    /* Check each bit in turn to see if a signal is to be sent.  Unlike
+     * kill(), the kernel may collect several unrelated signals for a
+     * process and pass them to MM in one blow.  Thus loop on the bit
+     * map. For SIGINT and SIGQUIT, use proc_id 0 to indicate a broadcast
+     * to the recipient's process group.  For SIGKILL, use proc_id -1 to
+     * indicate a systemwide broadcast.
+     */
+    for (i = 1; i <= _NSIG; i++) {
+        if (!sigismember(&sig_map, i)) continue;
+        switch (i) {
+            case SIGINT:
+            case SIGQUIT:
+                id = 0;
+                break;    /* broadcast to process group */
+            case SIGKILL:
+                id = -1;
+                break;    /* broadcast to all except INIT */
+            case SIGALRM:
+                /* Disregard SIGALRM when the target process has not
+                 * requested an alarm.  This only applies for a KERNEL
+                 * generated signal.
+                 */
+                if ((rmp->mp_flags & ALARM_ON) == 0) continue;
+                rmp->mp_flags &= ~ALARM_ON;
+                /* fall through */
+            default:
+                id = proc_id;
+                break;
+        }
+        check_sig(id, i);
+        sys_endsig(proc_nr);    /* tell kernel it's done */
+    }
+    return (SUSPEND);
 }
 
 
 /*===========================================================================*
  *				do_alarm				     *
  *===========================================================================*/
-PUBLIC int do_alarm()
-{
+PUBLIC int do_alarm() {
 /* Perform the alarm(seconds) system call. */
 
-  return(set_alarm(who, seconds));
+    return (set_alarm(who, seconds));
 }
 
 
@@ -261,68 +256,68 @@ PUBLIC int do_alarm()
  *				set_alarm				     *
  *===========================================================================*/
 PUBLIC int set_alarm(proc_nr, sec)
-int proc_nr;			/* process that wants the alarm */
-int sec;			/* how many seconds delay before the signal */
+        int proc_nr;            /* process that wants the alarm */
+        int sec;            /* how many seconds delay before the signal */
 {
 /* This routine is used by do_alarm() to set the alarm timer.  It is also used
  * to turn the timer off when a process exits with the timer still on.
  */
 
-  message m_sig;
-  int remaining;
+    message m_sig;
+    int remaining;
 
-  if (sec != 0)
-	mproc[proc_nr].mp_flags |= ALARM_ON;
-  else
-	mproc[proc_nr].mp_flags &= ~ALARM_ON;
+    if (sec != 0)
+        mproc[proc_nr].mp_flags |= ALARM_ON;
+    else
+        mproc[proc_nr].mp_flags &= ~ALARM_ON;
 
-  /* Tell the clock task to provide a signal message when the time comes.
-   *
-   * Large delays cause a lot of problems.  First, the alarm system call
-   * takes an unsigned seconds count and the library has cast it to an int.
-   * That probably works, but on return the library will convert "negative"
-   * unsigneds to errors.  Presumably no one checks for these errors, so
-   * force this call through.  Second, If unsigned and long have the same
-   * size, converting from seconds to ticks can easily overflow.  Finally,
-   * the kernel has similar overflow bugs adding ticks.
-   *
-   * Fixing this requires a lot of ugly casts to fit the wrong interface
-   * types and to avoid overflow traps.  DELTA_TICKS has the right type
-   * (clock_t) although it is declared as long.  How can variables like
-   * this be declared properly without combinatorial explosion of message
-   * types?
-   */
-  m_sig.m_type = SET_ALARM;
-  m_sig.CLOCK_PROC_NR = proc_nr;
-  m_sig.DELTA_TICKS = (clock_t) (HZ * (unsigned long) (unsigned) sec);
-  if ( (unsigned long) m_sig.DELTA_TICKS / HZ != (unsigned) sec)//溢出检查?
-	m_sig.DELTA_TICKS = LONG_MAX;	/* eternity (really CLOCK_T_MAX) */
-  if (sendrec(CLOCK, &m_sig) != OK) panic("alarm er", NO_NUM);
-  remaining = (int) m_sig.SECONDS_LEFT;
-  if (remaining != m_sig.SECONDS_LEFT || remaining < 0)
-	remaining = INT_MAX;	/* true value is not representable */
-  return(remaining);
+    /* Tell the clock task to provide a signal message when the time comes.
+     *
+     * Large delays cause a lot of problems.  First, the alarm system call
+     * takes an unsigned seconds count and the library has cast it to an int.
+     * That probably works, but on return the library will convert "negative"
+     * unsigneds to errors.  Presumably no one checks for these errors, so
+     * force this call through.  Second, If unsigned and long have the same
+     * size, converting from seconds to ticks can easily overflow.  Finally,
+     * the kernel has similar overflow bugs adding ticks.
+     *
+     * Fixing this requires a lot of ugly casts to fit the wrong interface
+     * types and to avoid overflow traps.  DELTA_TICKS has the right type
+     * (clock_t) although it is declared as long.  How can variables like
+     * this be declared properly without combinatorial explosion of message
+     * types?
+     */
+    m_sig.m_type = SET_ALARM;
+    m_sig.CLOCK_PROC_NR = proc_nr;
+    m_sig.DELTA_TICKS = (clock_t) (HZ * (unsigned long) (unsigned) sec);
+    if ((unsigned long) m_sig.DELTA_TICKS / HZ != (unsigned) sec)//溢出检查?
+        m_sig.DELTA_TICKS = LONG_MAX;    /* eternity (really CLOCK_T_MAX) */
+    if (sendrec(CLOCK, &m_sig) != OK) panic("alarm er", NO_NUM);
+    remaining = (int) m_sig.SECONDS_LEFT;
+    if (remaining != m_sig.SECONDS_LEFT || remaining < 0)
+        remaining = INT_MAX;    /* true value is not representable */
+    return (remaining);
 }
 
 
 /*===========================================================================*
  *				do_pause				     *
  *===========================================================================*/
-PUBLIC int do_pause()
-{
+PUBLIC int do_pause() {
 /* Perform the pause() system call. */
 
-  mp->mp_flags |= PAUSED;
-  return(SUSPEND);
+    mp->mp_flags |= PAUSED;
+    return (SUSPEND);
 }
 
 
 /*===========================================================================*
  *				sig_proc				     *
  *===========================================================================*/
+//该例程只是设置进程内核和用户堆栈以便进程被唤醒后执行信号处理程序。并不改变进程状态
 PUBLIC void sig_proc(rmp, signo)
-register struct mproc *rmp;	/* pointer to the process to be signaled */
-int signo;			/* signal to send to process (1 to _NSIG) */
+        register struct mproc *rmp;    /* pointer to the process to be signaled */
+        int signo;            /* signal to send to process (1 to _NSIG) */
 {
 /* Send a signal to a process.  Check to see if the signal is to be caught,
  * ignored, or blocked.  If the signal is to be caught, coordinate with
@@ -336,92 +331,93 @@ int signo;			/* signal to send to process (1 to _NSIG) */
  * If there is insufficient stack space, kill the process.
  */
 
-  vir_bytes new_sp;
-  int slot;
-  int sigflags;
-  struct sigmsg sm;
+    vir_bytes new_sp;
+    int slot;
+    int sigflags;
+    struct sigmsg sm;
 
-  slot = (int) (rmp - mproc);
-  if ((rmp->mp_flags & (IN_USE | ZOMBIE)) != IN_USE) {
-	printf("MM: signal %d sent to %s process %d\n",
-		(rmp->mp_flags & ZOMBIE) ? "zombie" : "dead", signo, slot);
-	panic("", NO_NUM);
-  }
-  if ((rmp->mp_flags & TRACED) && signo != SIGKILL) {
-	/* A traced process has special handling. */
-	unpause(slot);
-	stop_proc(rmp, signo);	/* a signal causes it to stop */
-	return;
-  }
-  /* Some signals are ignored by default. */
-  if (sigismember(&rmp->mp_ignore, signo)) return; 
+    slot = (int) (rmp - mproc);
+    if ((rmp->mp_flags & (IN_USE | ZOMBIE)) != IN_USE) {//进程未使用说明该进程是僵尸进程或被杀死了
+        printf("MM: signal %d sent to %s process %d\n",
+               (rmp->mp_flags & ZOMBIE) ? "zombie" : "dead", signo, slot);
+        panic("", NO_NUM);
+    }
+    if ((rmp->mp_flags & TRACED) && signo != SIGKILL) {
+        /* A traced process has special handling. */
+        unpause(slot);
+        stop_proc(rmp, signo);    /* a signal causes it to stop */
+        return;
+    }
+    /* Some signals are ignored by default. */
+    if (sigismember(&rmp->mp_ignore, signo)) return;//该信号被忽略
 
-  if (sigismember(&rmp->mp_sigmask, signo)) {
-	/* Signal should be blocked. */
-	sigaddset(&rmp->mp_sigpending, signo);
-	return;
-  }
-  sigflags = rmp->mp_sigact[signo].sa_flags;
-  if (sigismember(&rmp->mp_catch, signo)) {
-	if (rmp->mp_flags & ONSWAP) {
-		/* Process is swapped out, leave signal pending. */
-		sigaddset(&rmp->mp_sigpending, signo);
-		swap_inqueue(rmp);
-		return;
-	}
-	if (rmp->mp_flags & SIGSUSPENDED)
-		sm.sm_mask = rmp->mp_sigmask2;
-	else
-		sm.sm_mask = rmp->mp_sigmask;
-	sm.sm_signo = signo;
-	sm.sm_sighandler = (vir_bytes) rmp->mp_sigact[signo].sa_handler;
-	sm.sm_sigreturn = rmp->mp_sigreturn;
-	sys_getsp(slot, &new_sp);
-	sm.sm_stkptr = new_sp;
+    if (sigismember(&rmp->mp_sigmask, signo)) {//该信号需要被阻塞，则加入到阻塞列表中
+        /* Signal should be blocked. */
+        sigaddset(&rmp->mp_sigpending, signo);
+        return;
+    }
+    sigflags = rmp->mp_sigact[signo].sa_flags;
+    if (sigismember(&rmp->mp_catch, signo)) {//该信号需要被捕获而不是默认行为
+        if (rmp->mp_flags & ONSWAP) {//进程被换出时将进程加入到换入队列，将信号加入到阻塞列表
+            /* Process is swapped out, leave signal pending. */
+            sigaddset(&rmp->mp_sigpending, signo);
+            swap_inqueue(rmp);
+            return;
+        }
+        if (rmp->mp_flags & SIGSUSPENDED)//当前进程调用了do_sigsuspend从新设置了待阻塞列表，之前mp_sigmask被保存在mp_sigmask2变量中
+            sm.sm_mask = rmp->mp_sigmask2;
+        else
+            sm.sm_mask = rmp->mp_sigmask;
+        sm.sm_signo = signo;
+        sm.sm_sighandler = (vir_bytes) rmp->mp_sigact[signo].sa_handler;
+        sm.sm_sigreturn = rmp->mp_sigreturn;
+        sys_getsp(slot, &new_sp);//获取当前进程的sp
+        sm.sm_stkptr = new_sp;
 
-	/* Make room for the sigcontext and sigframe struct. */
-	new_sp -= sizeof(struct sigcontext)
-				 + 3 * sizeof(char *) + 2 * sizeof(int);
+        /* Make room for the sigcontext and sigframe struct. */
+        new_sp -= sizeof(struct sigcontext)
+                  + 3 * sizeof(char *) + 2 * sizeof(int);//设置新的sp,再信号处理函数之前设置环境
 
-	if (adjust(rmp, rmp->mp_seg[D].mem_len, new_sp) != OK)
-		goto doterminate;
+        if (adjust(rmp, rmp->mp_seg[D].mem_len, new_sp) != OK)//检查用户栈是否和数据段冲突如果冲突则使用信号的默认处理
+            goto doterminate;
 
-	rmp->mp_sigmask |= rmp->mp_sigact[signo].sa_mask;
-	if (sigflags & SA_NODEFER)
-		sigdelset(&rmp->mp_sigmask, signo);
-	else
-		sigaddset(&rmp->mp_sigmask, signo);
+        rmp->mp_sigmask |= rmp->mp_sigact[signo].sa_mask;//信号处理期间增加屏蔽的信号sa_mask
+        if (sigflags & SA_NODEFER)//sa_flags设置了SA_NODEFER位时从屏蔽位中删除当前信号signo，即signo信号处理期间该进程可以接受到signo
+            sigdelset(&rmp->mp_sigmask, signo);
+        else
+            sigaddset(&rmp->mp_sigmask, signo);//即signo信号处理期间该进程不可以接受到signo
 
-	if (sigflags & SA_RESETHAND) {
-		sigdelset(&rmp->mp_catch, signo);
-		rmp->mp_sigact[signo].sa_handler = SIG_DFL;
-	}
+        if (sigflags & SA_RESETHAND) {//设置该标志位后重置signo响应为SIG_DFL
+            sigdelset(&rmp->mp_catch, signo);
+            rmp->mp_sigact[signo].sa_handler = SIG_DFL;
+        }
 
-	sys_sendsig(slot, &sm);
-	sigdelset(&rmp->mp_sigpending, signo);
-	/* If process is hanging on PAUSE, WAIT, SIGSUSPEND, tty, pipe, etc.,
-	 * release it.
-	 */
-	unpause(slot);
-	return;
-  }
-doterminate:
-  /* Signal should not or cannot be caught.  Take default action. */
-  if (sigismember(&ign_sset, signo)) return;
+        sys_sendsig(slot, &sm);
+        sigdelset(&rmp->mp_sigpending, signo);
+        /* If process is hanging on PAUSE, WAIT, SIGSUSPEND, tty, pipe, etc.,
+         * release it.
+         */
+        unpause(slot);//解除slot的阻塞状态
+        return;
+    }
+    doterminate:
+    //sm_sighandler为默认处理时，部分信号被忽略，部分信号做核心转储然后退出进程处理
+    /* Signal should not or cannot be caught.  Take default action. */
+    if (sigismember(&ign_sset, signo)) return;//信号属于ign_sset时不做任何处理
 
-  rmp->mp_sigstatus = (char) signo;
-  if (sigismember(&core_sset, signo)) {
-	if (rmp->mp_flags & ONSWAP) {
-		/* Process is swapped out, leave signal pending. */
-		sigaddset(&rmp->mp_sigpending, signo);
-		swap_inqueue(rmp);
-		return;
-	}
-	/* Switch to the user's FS environment and dump core. */
-	tell_fs(CHDIR, slot, FALSE, 0);
-	dump_core(rmp);
-  }
-  mm_exit(rmp, 0);		/* terminate process */
+    rmp->mp_sigstatus = (char) signo;
+    if (sigismember(&core_sset, signo)) {//核心转储
+        if (rmp->mp_flags & ONSWAP) {//进程被换出加入到换入队列等待换入
+            /* Process is swapped out, leave signal pending. */
+            sigaddset(&rmp->mp_sigpending, signo);//将信号加入到阻塞队列等待处理
+            swap_inqueue(rmp);
+            return;
+        }
+        /* Switch to the user's FS environment and dump core. */
+        tell_fs(CHDIR, slot, FALSE, 0);
+        dump_core(rmp);//核心转储
+    }
+    mm_exit(rmp, 0);    //	/* terminate process */
 }
 
 
@@ -429,63 +425,63 @@ doterminate:
  *				check_sig				     *
  *===========================================================================*/
 PUBLIC int check_sig(proc_id, signo)
-pid_t proc_id;			/* pid of proc to sig, or 0 or -1, or -pgrp */
-int signo;			/* signal to send to process (0 to _NSIG) */
+        pid_t proc_id;            /* pid of proc to sig, or 0 or -1, or -pgrp */
+        int signo;            /* signal to send to process (0 to _NSIG) */
 {
 /* Check to see if it is possible to send a signal.  The signal may have to be
  * sent to a group of processes.  This routine is invoked by the KILL system
  * call, and also when the kernel catches a DEL or other signal.
  */
 
-  register struct mproc *rmp;
-  int count;			/* count # of signals sent */
-  int error_code;
+    register struct mproc *rmp;
+    int count;            /* count # of signals sent */
+    int error_code;
 
-  if (signo < 0 || signo > _NSIG) return(EINVAL);
+    if (signo < 0 || signo > _NSIG) return (EINVAL);
 
-  /* Return EINVAL for attempts to send SIGKILL to INIT alone. */
-  if (proc_id == INIT_PID && signo == SIGKILL) return(EINVAL);
+    /* Return EINVAL for attempts to send SIGKILL to INIT alone. */
+    if (proc_id == INIT_PID && signo == SIGKILL) return (EINVAL); //SIGKILL不能发生到init进程
 
-  /* Search the proc table for processes to signal.  (See forkexit.c about
-   * pid magic.)
-   */
-  count = 0;
-  error_code = ESRCH;
-  for (rmp = &mproc[INIT_PROC_NR]; rmp < &mproc[NR_PROCS]; rmp++) {
-	if (!(rmp->mp_flags & IN_USE)) continue;
-	if ((rmp->mp_flags & ZOMBIE) && signo != 0) continue;
+    /* Search the proc table for processes to signal.  (See forkexit.c about
+     * pid magic.)
+     */
+    count = 0;
+    error_code = ESRCH;
+    for (rmp = &mproc[INIT_PROC_NR]; rmp < &mproc[NR_PROCS]; rmp++) {
+        if (!(rmp->mp_flags & IN_USE)) continue;
+        if ((rmp->mp_flags & ZOMBIE) && signo != 0) continue;
 
-	/* Check for selection. */
-	if (proc_id > 0 && proc_id != rmp->mp_pid) continue;
-	if (proc_id == 0 && mp->mp_procgrp != rmp->mp_procgrp) continue;
-	if (proc_id == -1 && rmp->mp_pid <= INIT_PID) continue;
-	if (proc_id < -1 && rmp->mp_procgrp != -proc_id) continue;
+        /* Check for selection. */
+        if (proc_id > 0 && proc_id != rmp->mp_pid) continue;
+        if (proc_id == 0 && mp->mp_procgrp != rmp->mp_procgrp) continue;//proc_id为0时发生到与当前进程组相同的的进程
+        if (proc_id == -1 && rmp->mp_pid <= INIT_PID) continue;//不能通过进程组发送给INIT_PID以下的进程
+        if (proc_id < -1 && rmp->mp_procgrp != -proc_id) continue;
 
-	/* Check for permission. */
-	if (mp->mp_effuid != SUPER_USER
-	    && mp->mp_realuid != rmp->mp_realuid
-	    && mp->mp_effuid != rmp->mp_realuid
-	    && mp->mp_realuid != rmp->mp_effuid
-	    && mp->mp_effuid != rmp->mp_effuid) {
-		error_code = EPERM;
-		continue;
-	}
+        /* Check for permission. */
+        if (mp->mp_effuid != SUPER_USER //非su权限进程只能发送给ruid,rgid,euid,egid完全相同的进程
+            && mp->mp_realuid != rmp->mp_realuid
+            && mp->mp_effuid != rmp->mp_realuid
+            && mp->mp_realuid != rmp->mp_effuid
+            && mp->mp_effuid != rmp->mp_effuid) {
+            error_code = EPERM;
+            continue;
+        }
 
-	count++;
-	if (signo == 0) continue;
+        count++;
+        if (signo == 0) continue;
 
-	/* 'sig_proc' will handle the disposition of the signal.  The
-	 * signal may be caught, blocked, ignored, or cause process
-	 * termination, possibly with core dump.
-	 */
-	sig_proc(rmp, signo);
+        /* 'sig_proc' will handle the disposition of the signal.  The
+         * signal may be caught, blocked, ignored, or cause process
+         * termination, possibly with core dump.
+         */
+        sig_proc(rmp, signo);//信号处理
 
-	if (proc_id > 0) break;	/* only one process being signaled */
-  }
+        if (proc_id > 0) break;    /* only one process being signaled */
+    }
 
-  /* If the calling process has killed itself, don't reply. */
-  if ((mp->mp_flags & (IN_USE | ZOMBIE)) != IN_USE) return(SUSPEND);
-  return(count > 0 ? OK : error_code);
+    /* If the calling process has killed itself, don't reply. */
+    if ((mp->mp_flags & (IN_USE | ZOMBIE)) != IN_USE) return (SUSPEND);//
+    return (count > 0 ? OK : error_code);
 }
 
 
@@ -493,29 +489,29 @@ int signo;			/* signal to send to process (0 to _NSIG) */
  *                               check_pending				     *
  *===========================================================================*/
 PUBLIC void check_pending(rmp)
-register struct mproc *rmp;
+        register struct mproc *rmp;
 {
-  /* Check to see if any pending signals have been unblocked.  The
-   * first such signal found is delivered.
-   *
-   * If multiple pending unmasked signals are found, they will be
-   * delivered sequentially.
-   *
-   * There are several places in this file where the signal mask is
-   * changed.  At each such place, check_pending() should be called to
-   * check for newly unblocked signals.
-   */
+    /* Check to see if any pending signals have been unblocked.  The
+     * first such signal found is delivered.
+     *
+     * If multiple pending unmasked signals are found, they will be
+     * delivered sequentially.
+     *
+     * There are several places in this file where the signal mask is
+     * changed.  At each such place, check_pending() should be called to
+     * check for newly unblocked signals.
+     */
 
-  int i;
+    int i;
 
-  for (i = 1; i <= _NSIG; i++) {
-	if (sigismember(&rmp->mp_sigpending, i) &&
-		!sigismember(&rmp->mp_sigmask, i)) {
-		sigdelset(&rmp->mp_sigpending, i);
-		sig_proc(rmp, i);
-		break;
-	}
-  }
+    for (i = 1; i <= _NSIG; i++) {
+        if (sigismember(&rmp->mp_sigpending, i) &&
+            !sigismember(&rmp->mp_sigmask, i)) {
+            sigdelset(&rmp->mp_sigpending, i);
+            sig_proc(rmp, i);//待处理信号存在未被屏蔽的信号则出发信号处理程序
+            break;
+        }
+    }
 }
 
 
@@ -523,7 +519,7 @@ register struct mproc *rmp;
  *				unpause					     *
  *===========================================================================*/
 PRIVATE void unpause(pro)
-int pro;			/* which process number */
+        int pro;            /* which process number */
 {
 /* A signal is to be sent to a process.  If that process is hanging on a
  * system call, the system call must be terminated with EINTR.  Possible
@@ -532,19 +528,19 @@ int pro;			/* which process number */
  * so it can check for READs and WRITEs from pipes, ttys and the like.
  */
 
-  register struct mproc *rmp;
+    register struct mproc *rmp;
 
-  rmp = &mproc[pro];
+    rmp = &mproc[pro];
 
-  /* Check to see if process is hanging on a PAUSE, WAIT or SIGSUSPEND call. */
-  if (rmp->mp_flags & (PAUSED | WAITING | SIGSUSPENDED)) {
-	rmp->mp_flags &= ~(PAUSED | WAITING | SIGSUSPENDED);
-	setreply(pro, EINTR);
-	return;
-  }
+    /* Check to see if process is hanging on a PAUSE, WAIT or SIGSUSPEND call. */
+    if (rmp->mp_flags & (PAUSED | WAITING | SIGSUSPENDED)) {
+        rmp->mp_flags &= ~(PAUSED | WAITING | SIGSUSPENDED);
+        setreply(pro, EINTR);
+        return;
+    }
 
-  /* Process is not hanging on an MM call.  Ask FS to take a look. */
-  tell_fs(UNPAUSE, pro, 0, 0);
+    /* Process is not hanging on an MM call.  Ask FS to take a look. */
+    tell_fs(UNPAUSE, pro, 0, 0);
 }
 
 
@@ -552,58 +548,59 @@ int pro;			/* which process number */
  *				dump_core				     *
  *===========================================================================*/
 PRIVATE void dump_core(rmp)
-register struct mproc *rmp;	/* whose core is to be dumped */
+        register struct mproc *rmp;    /* whose core is to be dumped */
 {
 /* Make a core dump on the file "core", if possible. */
 
-  int fd, fake_fd, nr_written, seg, slot;
-  char *buf;
-  vir_bytes current_sp;
-  phys_bytes left;		/* careful; 64K might overflow vir_bytes */
-  unsigned nr_to_write;		/* unsigned for arg to write() but < INT_MAX */
-  long trace_data, trace_off;
+    int fd, fake_fd, nr_written, seg, slot;
+    char *buf;
+    vir_bytes current_sp;
+    phys_bytes left;        /* careful; 64K might overflow vir_bytes */
+    unsigned nr_to_write;        /* unsigned for arg to write() but < INT_MAX */
+    long trace_data, trace_off;
 
-  slot = (int) (rmp - mproc);
+    slot = (int) (rmp - mproc);
 
-  /* Can core file be written?  We are operating in the user's FS environment,
-   * so no special permission checks are needed.
-   */
-  if (rmp->mp_realuid != rmp->mp_effuid) return;
-  if ( (fd = open(core_name, O_WRONLY | O_CREAT | O_TRUNC | O_NONBLOCK,
-						CORE_MODE)) < 0) return;
-  rmp->mp_sigstatus |= DUMPED;
+    /* Can core file be written?  We are operating in the user's FS environment,
+     * so no special permission checks are needed.
+     */
+    if (rmp->mp_realuid != rmp->mp_effuid) return;
+    if ((fd = open(core_name, O_WRONLY | O_CREAT | O_TRUNC | O_NONBLOCK,
+                   CORE_MODE)) < 0)
+        return;
+    rmp->mp_sigstatus |= DUMPED;
 
-  /* Make sure the stack segment is up to date.
-   * We don't want adjust() to fail unless current_sp is preposterous,
-   * but it might fail due to safety checking.  Also, we don't really want 
-   * the adjust() for sending a signal to fail due to safety checking.  
-   * Maybe make SAFETY_BYTES a parameter.
-   */
-  sys_getsp(slot, &current_sp);
-  adjust(rmp, rmp->mp_seg[D].mem_len, current_sp);
+    /* Make sure the stack segment is up to date.
+     * We don't want adjust() to fail unless current_sp is preposterous,
+     * but it might fail due to safety checking.  Also, we don't really want
+     * the adjust() for sending a signal to fail due to safety checking.
+     * Maybe make SAFETY_BYTES a parameter.
+     */
+    sys_getsp(slot, &current_sp);
+    adjust(rmp, rmp->mp_seg[D].mem_len, current_sp);
 
-  /* Write the memory map of all segments to begin the core file. */
-  if (write(fd, (char *) rmp->mp_seg, (unsigned) sizeof rmp->mp_seg)
-      != (unsigned) sizeof rmp->mp_seg) {
-	close(fd);
-	return;
-  }
+    /* Write the memory map of all segments to begin the core file. */
+    if (write(fd, (char *) rmp->mp_seg, (unsigned) sizeof rmp->mp_seg)
+        != (unsigned) sizeof rmp->mp_seg) {
+        close(fd);
+        return;
+    }
 
-  /* Write out the whole kernel process table entry to get the regs. */
-  trace_off = 0;
-  while (sys_trace(3, slot, trace_off, &trace_data) == OK) {
-	if (write(fd, (char *) &trace_data, (unsigned) sizeof (long))
-	    != (unsigned) sizeof (long)) {
-		close(fd);
-		return;
-	}
-	trace_off += sizeof (long);
-  }
+    /* Write out the whole kernel process table entry to get the regs. */
+    trace_off = 0;
+    while (sys_trace(3, slot, trace_off, &trace_data) == OK) {
+        if (write(fd, (char *) &trace_data, (unsigned) sizeof(long))
+            != (unsigned) sizeof(long)) {
+            close(fd);
+            return;
+        }
+        trace_off += sizeof(long);
+    }
 
-  /* Loop through segments and write the segments themselves out. */
-  for (seg = 0; seg < NR_SEGS; seg++) {
-	rw_seg(1, fd, slot, seg,
-		(phys_bytes) rmp->mp_seg[seg].mem_len << CLICK_SHIFT);
-  }
-  close(fd);
+    /* Loop through segments and write the segments themselves out. */
+    for (seg = 0; seg < NR_SEGS; seg++) {
+        rw_seg(1, fd, slot, seg,
+               (phys_bytes) rmp->mp_seg[seg].mem_len << CLICK_SHIFT);
+    }
+    close(fd);
 }
