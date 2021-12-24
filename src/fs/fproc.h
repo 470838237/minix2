@@ -19,6 +19,7 @@ EXTERN struct fproc {
   int  fp_nbytes;		/* place to save bytes if rd/wr can't finish */
   int  fp_cum_io_partial;	/* partial byte count if rd/wr can't finish */
   char fp_suspended;		/* set to indicate process hanging */
+  //当置位为SUSPENDED时表面当前进程被文件系统调用阻塞
   char fp_revived;		/* set to indicate process being revived */
   char fp_task;			/* which task is proc suspended on */
   char fp_sesldr;		/* true if proc is a session leader */

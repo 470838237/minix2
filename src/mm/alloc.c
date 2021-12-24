@@ -386,7 +386,7 @@ PRIVATE int swap_out()
   rmp = outswap;
   do {
 	if (++rmp == &mproc[NR_PROCS]) rmp = &mproc[LOW_USER];
-
+    //只有当前进程处于当前进程的其中一种时表面当前进程处于阻塞状态，才能被换出内存
 	/* A candidate? */
 	if (!(rmp->mp_flags & (PAUSED | WAITING | SIGSUSPENDED))) continue;
 

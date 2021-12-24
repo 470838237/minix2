@@ -1,0 +1,16 @@
+ptrace用于追踪调试进程
+假设一个调试程序需要调试一个进程，可以通过如下步骤实现
+1 调用fork系统调用fork一个子进程
+2 在子进程调用ptrace(T_OK)，也可以在程序其他位置调用，为当前进程设置TRACED标志位
+3 调用execve系统调用载入待调试的程序。kernel exec会检测当前程序标志变量TRACED位是否被置位，被置位后kernel发送信号SIGTRAP至当前进程。
+4 kernel通知mm进程处理信号，mm信号处理例程检测到当前进程TRACED标志且信号不为SIGKILL时，检测当前进程是否因为mm和fs系统调用阻塞，如果是则解除阻塞
+  并对当前进程设置STOPPED标志
+5 第4部通知kernel阻塞进程。设置进程P_STOP标志位，并清理cpu状态标识器TRACEBIT
+6 只有经过了第4步被设置了STOPPED标志位时，才允许父进程对子进程调试，即调用其他ptrace请求
+7 ptrace(T_EXIT)直接结束掉子进程
+8 调用ptrace(T_STEP)时清除STOPPED位置，此时父进程不能执行ptrace操作。并附加TRACED标志位。
+9 kernel接收到mm调用后设置处理器状态标志位TRACEBIT，清理STOPPED标志位，将当前进程加入就绪队列等待调度
+10 调度程序选择待调试进程作为当前运行进程后，执行1条指令后产生SIGTRAP异常，阻塞进程。异常处理程序触发信号处理cause_sig，此时回到了第4步骤
+11 调用ptrace(T_RESUME)时会清除TRACEBIT位从而使得程序一直运行下去，不会重复上述步骤
+12 其他调用还可以设置或获取指令数据状态字等。通过这些调用可以调试程序，检测程序内部运行状态。
+

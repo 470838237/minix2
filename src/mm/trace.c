@@ -40,11 +40,14 @@ PUBLIC int do_trace()
   /* the T_OK call is made by the child fork of the debugger before it execs  
    * the process to be traced
    */
+  //debugger进程先fork子进程然后执行该调用，子进程标记为TRACED
+  //当然也可以在程序代码其他地方调用
   if (request == T_OK) {/* enable tracing by parent for this process */
-	mp->mp_flags |= TRACED;//标记当前进程被调试，应该在被fork后设置
+	mp->mp_flags |= TRACED;
 	mp->mp_reply.m2_l2 = 0;
 	return(OK);
   }
+  //由另外一个进程监视待调试进程pid。pid必须处于STOPPED状态，意味着子进程调用了
   if ((child = findproc(pid)) == NIL_MPROC || !(child->mp_flags & STOPPED)) {
 	return(ESRCH);
   }
@@ -61,10 +64,11 @@ PUBLIC int do_trace()
 	if (data < 0 || data > _NSIG) return(EIO);
 	if (data > 0) {		/* issue signal */
 		child->mp_flags &= ~TRACED;  /* so signal is not diverted */
-		sig_proc(child, (int) data);
+		sig_proc(child, (int) data);//用于调试sig_handler例程
 		child->mp_flags |= TRACED;
 	}
 	child->mp_flags &= ~STOPPED;
+	//ptrace操作失败,清除STOPPED;
   	break;
   }
   if (sys_trace(request, (int) (child - mproc), taddr, &data) != OK)
@@ -96,6 +100,7 @@ int signo;
 /* A traced process got a signal so stop it. */
 
   register struct mproc *rpmp = mproc + rmp->mp_parent;
+  //清除跟踪标志位,阻塞进程
 
   if (sys_trace(-1, (int) (rmp - mproc), 0L, (long *) 0) != OK) return;
   rmp->mp_flags |= STOPPED;

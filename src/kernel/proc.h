@@ -38,6 +38,7 @@ struct proc {
 
   int p_flags;			/* SENDING, RECEIVING, etc. */
   //fork时或p_pendcount为0时清楚标志位SIG_PENDING
+  //p_flags为0时才可以运行
   struct mem_map p_map[NR_SEGS];/* memory map */
   pid_t p_pid;			/* process id passed in from MM */
   int p_priority;		/* task, server, or user process */
@@ -72,8 +73,13 @@ struct proc {
 #define SENDING		0x02	/* set when process blocked trying to send */
 #define RECEIVING	0x04	/* set when process blocked trying to recv */
 #define PENDING		0x08	/* set when inform() of signal pending */
+//inform调用时清除PENDING，拥有待处理进程数-1，当内核cause_sig时标志位不存在PENDING时置位PENDING，拥有待处理进程数+1
+//sig_procs：用于统计拥有待处理进程数，不必遍历进程列表来统计待处理进程数，用于判断是否需要触发inform调用
+//PENDING作用用于限制调用mm次数。每次mm成功调用后mm进程保存了所有的信号。因此如果没有新的信号到来时不需要通知到mm
 #define SIG_PENDING	0x10	/* keeps to-be-signalled proc from running */
+//标识当前进程是否存在待处理信号
 #define P_STOP		0x20	/* set when process is being traced */
+//设置该标志位用于组织进程被调度
 /* Values for p_priority */
 #define PPRI_NONE	0	/* Slot is not in use */
 #define PPRI_TASK	1	/* Part of the kernel */

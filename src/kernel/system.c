@@ -274,6 +274,9 @@ message *m_ptr;			/* pointer to request message */
 #endif
   old_flags = rp->p_flags;	/* save the previous value of the flags */
   rp->p_flags &= ~NO_MAP;
+  //p_flags清除了PENDING | SIG_PENDING | P_STOP置位了NO_MAP，父进程肯定会因为系统调用而阻塞即old_flags != 0
+  //fork进程也会有RECEIVING标志位因此 rp->p_flags == 0不成立，进程不会在此处被调度
+  //而是当mm fork执行完毕后reply后解除了fork进程的阻塞
   if (old_flags != 0 && rp->p_flags == 0) lock_ready(rp);
 
   return(OK);
@@ -329,7 +332,7 @@ register message *m_ptr;	/* pointer to request message */
   rp = proc_addr(m_ptr->PROC1);
   assert(isuserp(rp));
   /* PROC2 field is used as flag to indicate process is being traced */
-  if (m_ptr->PROC2) cause_sig(m_ptr->PROC1, SIGTRAP);
+  if (m_ptr->PROC2) cause_sig(m_ptr->PROC1, SIGTRAP);//被标记为TRACED的进程触发此分支。对进程发送SIGTRAP信号
   sp = (reg_t) m_ptr->STACK_PTR;
   rp->p_reg.sp = sp;		/* set the stack pointer */
 #if (CHIP == M68000)
@@ -897,7 +900,7 @@ register message *m_ptr;
 
   case T_STEP:			/* set trace bit */
 	rp->p_reg.psw |= TRACEBIT;//状态字设置TRACEBIT位，并唤醒进程。推断TRACEBIT位被设置后处理器只会运行一条指令后然后停止运行
-	rp->p_flags &= ~P_STOP;
+	rp->p_flags &= ~P_STOP;//清除P_STOP使得进程可以被调度
 	if (rp->p_flags == 0) lock_ready(rp);
 	TR_DATA = 0;
 	break;
@@ -928,8 +931,9 @@ message *m_ptr;			/* pointer to request message */
   switch (request) {
   case SYSSIGNON: {
 	struct systaskinfo info;
-
+    //将一个优先级user进程注册为server
 	/* Make this process a server. */
+	//不能拥有超级权限，不能是非user优先级进程
 	if (!priv || !isuserp(pp)) return(EPERM);
 	info.proc_nr = proc_nr;
 	if (vir_copy(SYSTASK, (vir_bytes) &info,
@@ -1051,7 +1055,7 @@ int sig_nr;			/* signal to be sent, 1 to _NSIG */
 	return;			/* this signal already pending */
   sigaddset(&rp->p_pending, sig_nr);
   ++rp->p_pendcount;		/* count new signal pending */
-  if (rp->p_flags & PENDING)
+  if (rp->p_flags & PENDING)//当前进程如果
 	return;			/* another signal already pending */
   if (rp->p_flags == 0) lock_unready(rp);
   rp->p_flags |= PENDING | SIG_PENDING;

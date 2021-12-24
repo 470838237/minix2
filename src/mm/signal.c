@@ -305,7 +305,7 @@ PUBLIC int set_alarm(proc_nr, sec)
  *===========================================================================*/
 PUBLIC int do_pause() {
 /* Perform the pause() system call. */
-
+    //该系统调用阻塞进程
     mp->mp_flags |= PAUSED;
     return (SUSPEND);
 }
@@ -344,8 +344,8 @@ PUBLIC void sig_proc(rmp, signo)
     }
     if ((rmp->mp_flags & TRACED) && signo != SIGKILL) {
         /* A traced process has special handling. */
-        unpause(slot);
-        stop_proc(rmp, signo);    /* a signal causes it to stop */
+        unpause(slot);//解除因mm或fs系统调用阻塞
+        stop_proc(rmp, signo); //标记当进程为STOP，为trace操作准备(trace操作时必须进程必须标记为STOP)   /* a signal causes it to stop */
         return;
     }
     /* Some signals are ignored by default. */
@@ -533,6 +533,7 @@ PRIVATE void unpause(pro)
     rmp = &mproc[pro];
 
     /* Check to see if process is hanging on a PAUSE, WAIT or SIGSUSPEND call. */
+    //进程因mm系统调用阻塞
     if (rmp->mp_flags & (PAUSED | WAITING | SIGSUSPENDED)) {
         rmp->mp_flags &= ~(PAUSED | WAITING | SIGSUSPENDED);
         setreply(pro, EINTR);

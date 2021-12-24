@@ -70,6 +70,8 @@ PUBLIC int do_svrctl()
 	/* A user process becomes a task.  Simulate an exit by
 	 * releasing a waiting parent and disinheriting children.
 	 */
+      //将一个优先级user进程注册为server
+      //然后将进程的父进程变为INIT_PROC_NR，同时进程组设置为0.释放等待该进程的父进程。此操作需要超级权限
 	struct mproc *rmp;
 	pid_t pidarg;
 

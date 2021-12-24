@@ -31,6 +31,7 @@ EXTERN struct mproc {
   sigset_t mp_sigmask;		/* signals to be blocked */
   sigset_t mp_sigmask2;		/* saved copy of mp_sigmask */
   sigset_t mp_sigpending;	/* signals being blocked */
+  //当发送的信号被mp_sigmask阻塞时存放至mp_sigpending
   struct sigaction mp_sigact[_NSIG + 1]; /* as in sigaction(2) */
   vir_bytes mp_sigreturn; 	/* address of C library __sigreturn function */
 
@@ -46,13 +47,16 @@ EXTERN struct mproc {
 /* Flag values */
 #define IN_USE          0x001	/* set when 'mproc' slot in use */
 #define WAITING         0x002	/* set by WAIT system call */
+//父进程等待子进程退出，并阻塞父进程此时置位。
 #define ZOMBIE          0x004	/* set by EXIT, cleared by WAIT */
 #define PAUSED          0x008	/* set by PAUSE system call */
+//系统调用阻塞进程置位
 #define ALARM_ON        0x010	/* set when SIGALRM timer started */
 #define SEPARATE	0x020	/* set if file is separate I & D space */
 #define	TRACED		0x040	/* set if process is to be traced */
 #define STOPPED		0x080	/* set if process stopped for tracing */
 #define SIGSUSPENDED 	0x100	/* set by SIGSUSPEND system call */
+//系统调用阻塞进程置位
 #define REPLY	 	0x200	/* set if a reply message is pending */
 #define ONSWAP	 	0x400	/* set if data segment is swapped out */
 #define SWAPIN	 	0x800	/* set if on the "swap this in" queue */

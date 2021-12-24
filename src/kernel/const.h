@@ -7,6 +7,7 @@
 #define INIT_PSW      0x0200	/* initial psw */
 #define INIT_TASK_PSW 0x1200	/* initial psw for tasks (with IOPL 1) */
 #define TRACEBIT       0x100	/* OR this with psw in proc[] for tracing */
+// 当追踪标志TF被置为1时，CPU进入单步执行方式，即每执行一条指令，产生一个单步中断请求。这种方式主要用于程序的调试
 #define SETPSW(rp, new)	/* permits only certain bits to be set */ \
 	((rp)->p_reg.psw = (rp)->p_reg.psw & ~0xCD5 | (new) & 0xCD5)
 
