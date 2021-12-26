@@ -147,7 +147,7 @@ PRIVATE int common_open(oflags, omode)
                     r = dev_open(dev, who, bits | (oflags & ~O_ACCMODE));
                     break;
 
-                case I_NAMED_PIPE://什么情况下I_NAMED_PIPE才会被用户设置呢？目前来看不太会执行到此(mknod系统调用会创建type为I_NAMED_PIPE的文件)
+                case I_NAMED_PIPE://(mknod系统调用会创建type为I_NAMED_PIPE的文件)
                     oflags |= O_APPEND;    /* force append mode */
                     fil_ptr->filp_flags = oflags;
                     r = pipe_open(rip, bits, oflags);
@@ -301,7 +301,7 @@ PRIVATE int pipe_open(rip, bits, oflags)
  *===========================================================================*/
 PUBLIC int do_mknod() {
 /* Perform the mknod(name, mode, addr) system call. */
-
+    //该接口可以为设备创建设备文件
     register mode_t bits, mode_bits;
     struct inode *ip;
 

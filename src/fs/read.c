@@ -95,6 +95,7 @@ int rw_flag;			/* READING or WRITING */
   /* Check for character special files. */
   if (char_spec) {
 	dev = (dev_t) rip->i_zone[0];
+	//字符设备
 	r = dev_io(op, dev, usr, buffer, position, nbytes, oflags);
 	if (r >= 0) {
 		cum_io = r;

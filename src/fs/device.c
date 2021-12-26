@@ -151,11 +151,8 @@ int flags;			/* mode bits and flags */
  
   int r;
   register struct fproc *rfp;
-  //当一个进程打开tty设备时,如果当前非领导进程或当前进程已经打开了ctty设备时,则当前dev flags被设置为O_NOCTTY
-  //非上述情况则搜索其他进程是否打开的tty设备号是否和dev相等,存在则flags被设置为O_NOCTTY
-  //1 非领导进程不能拥有ctty
-  //2 领导进程已拥有ctty时再次打开的tty不能为ctty
-  //3 其他进程已存在tty的设备号为dev,则该dev只能为tty不能为ctty
+
+  //fp_sesldr为0时，fp_tty一定为0。p_sesldr不为0时，fp_tty可能不为0，可能为1
 
   /* Add O_NOCTTY to the flags if this process is not a session leader, or
    * if it already has a controlling tty, or if it is someone elses
@@ -375,6 +372,8 @@ int op;				/* operation, DEV_OPEN or DEV_CLOSE */
 dev_t dev;			/* device to open or close */
 int proc;			/* process to open/close for */
 int flags;			/* mode bits and flags */
+//打开一个设备并分配新的次设备号，如果分配成功则创建设备文件并分配设备描述符
+//该接口主要应用于网络链接
 {
 /* Some devices need special processing upon open.  Such a device is "cloned",
  * i.e. on a succesful open it is replaced by a new device with a new unique

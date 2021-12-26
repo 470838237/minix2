@@ -308,6 +308,7 @@ PUBLIC int do_exit()
   if (fp->fp_tty == 0) return(OK);		/* no controlling tty */
   dev = fp->fp_tty;
 
+  //被关闭进程fp_tty不为0时，检测是否有其他进程共享该设备，然后关闭该设备号
   for (rfp = &fproc[LOW_USER]; rfp < &fproc[NR_PROCS]; rfp++) {
 	if (rfp->fp_tty == dev) rfp->fp_tty = 0;
 
